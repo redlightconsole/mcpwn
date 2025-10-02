@@ -43,7 +43,9 @@ func main() {
 
 	health, err := Client.CheckHealth()
 	if err != nil {
-		slog.Warn("Unable to connect to the API server", "server", *serverURL, "err", err)
+		slog.Error("Unable to connect to the API", "server", *serverURL, "err", err)
+		slog.Info("Please check the server URL or build api-server first and try again.")
+		return
 	} else {
 		slog.Info("Successfully connected to the API server", "status", health.Status)
 		if !health.AllMainToolsAvailable {
