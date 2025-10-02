@@ -29,8 +29,8 @@ func main() {
 		}
 	}
 
-	slog.Info("Starting the API Server on port", "port", conf.Port)
-	slog.Info("Default command timeout is", "timeout", conf.CommandTimeout)
+	slog.Info("Starting the API Server on", "port", conf.Port)
+	slog.Info("Default command", "timeout", conf.CommandTimeout)
 
 	router := api.NewRouter(conf.CommandTimeout)
 

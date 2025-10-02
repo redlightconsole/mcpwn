@@ -25,17 +25,21 @@ func createToolProxyHandler(Client *client.Client, apiEndpoint string) http.Hand
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(result) // TODO: Handle error for Encoding
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			slog.Error("Error encoding JSON response", "error", err)
+			return
+		}
 	}
 }
 
 func main() {
 	serverURL := flag.String("server", "http://localhost:5000", "API server URL")
-	timeoutSec := flag.Int("timeout", 300, "Request timeout in seconds")
+	timeoutReq := flag.Int("timeout", 300, "Request timeout in seconds")
 	mcpPort := flag.Int("port", 8000, "Port for the MCP server")
 	flag.Parse()
 
-	Client := client.New(*serverURL, time.Duration(*timeoutSec)*time.Second)
+	timeout := time.Duration(*timeoutReq) * time.Second
+	Client := client.New(*serverURL, timeout)
 
 	health, err := Client.CheckHealth()
 	if err != nil {
@@ -52,7 +56,7 @@ func main() {
 	mux.HandleFunc("/tools/command", createToolProxyHandler(Client, "api/command"))
 	// Add more tool handlers as needed
 
-	slog.Info("Starting MCP server on port", "port", *mcpPort)
+	slog.Info("Starting MCP server on", "port", *mcpPort)
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", *mcpPort), mux); err != nil {
 		slog.Error("Failed to start MCP server", "error", err)
 	}
