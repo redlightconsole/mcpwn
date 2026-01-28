@@ -13,6 +13,7 @@ var (
 	Version = "dev"
 	Commit  = "none"
 	Date    = "unknown"
+	Contact = "Dario Camonita <danterolle@parrotsec.org>"
 )
 
 func main() {
@@ -45,12 +46,12 @@ func main() {
 	}
 
 	slog.Info("mcpwn starting",
+		"contact", Contact,
 		"version", Version,
 		"commit", Commit,
 		"build_date", Date,
 		"tools_count", len(cfg.Tools),
 	)
-
 	srv := server.New(cfg, Version)
 	if err := srv.Serve(); err != nil {
 		slog.Error("Server crash...", "error", err)
