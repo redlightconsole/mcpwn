@@ -30,6 +30,8 @@ cd mcpwn
 go build -o mcpwn cmd/mcpwn/main.go
 ```
 
+Furthermore, `mcpwn` is cross-platform, so you can build the project for GNU/Linux, macOS, and Windows. Please see `/scripts/build.sh`.
+
 ## Configuration
 
 Tools are defined in the `mcpwn.yaml` file located in the same directory as the executable.
@@ -76,22 +78,29 @@ Run the following command in your terminal:
 claude mcp add --transport stdio mcpwn -- /path/to/your/mcpwn
 ```
 
-#### Gemini
-To use `mcpwn` with **Gemini** (via Gemini CLI or other MCP-compatible Google clients), ensure your environment supports MCP and add the server to your settings:
+#### Gemini CLI
 
-```json
-{
-  "mcpServers": {
-    "mcpwn": {
-      "command": "/path/to/your/mcpwn",
-      "args": [],
-      "transport": "stdio"
-    }
-  }
-}
-```
+To use `mcpwn` with the [Gemini CLI](https://github.com/google-gemini/gemini-cli), follow these steps:
 
-*Note: Replace `/path/to/your/mcpwn` with the absolute path to your compiled binary.*
+1. **Build the binary**:
+   ```bash
+   go build -o mcpwn cmd/mcpwn/main.go
+   ```
+
+2. **Register the server**: run the following command to add `mcpwn` to your Gemini CLI configuration (using your current absolute path):
+   ```bash
+   gemini mcp add mcpwn $(pwd)/mcpwn
+   ```
+
+3. **Start Gemini**:
+   ```bash
+   gemini
+   ```
+
+4. **Use**: inside the Gemini session, you can verify the connection by typing `/mcp list`. You can then ask the model to run your tools, e.g.:
+   > Scan localhost using nmap_scan in fast mode.
+
+*Note: If you modify `mcpwn.yaml`, you must restart the Gemini CLI session to refresh the tool definitions.*
 
 ## Project Structure
 
