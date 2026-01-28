@@ -35,3 +35,49 @@ tools:
       - name: "extensions"
         description: "File extensions (php,txt)"
         flag: "-x"
+
+  - name: "ffuf_fuzz"
+    description: "ffuf is a fast web fuzzer written in Go. It allows for directory discovery, parameter fuzzing and more."
+    command: "ffuf"
+    fixed_args: ["-s"]
+    args:
+      - name: "url"
+        description: "Target URL containing FUZZ keyword (e.g. http://example.com/FUZZ)"
+        required: true
+        flag: "-u"
+      - name: "wordlist"
+        description: "Path to wordlist"
+        required: true
+        flag: "-w"
+      - name: "extensions"
+        description: "Comma-separated list of extensions to fuzz (e.g. .php,.txt)"
+        flag: "-e"
+      - name: "match_codes"
+        description: "Match HTTP status codes (e.g. 200,301,403)"
+        flag: "-mc"
+
+  - name: "httpx_probe"
+    description: "httpx is a fast and multi-purpose HTTP toolkit that allows running multiple probes."
+    command: "httpx"
+    fixed_args: ["-silent", "-nc"]
+    args:
+      - name: "target"
+        description: "Target URL, domain or IP to probe"
+        required: true
+        flag: "-u"
+      - name: "status_code"
+        description: "Show HTTP status code"
+        flag: "-sc"
+        type: "boolean"
+      - name: "tech_detect"
+        description: "Detect technologies in use"
+        flag: "-td"
+        type: "boolean"
+      - name: "page_title"
+        description: "Show page title"
+        flag: "-title"
+        type: "boolean"
+      - name: "follow_redirects"
+        description: "Follow HTTP redirects"
+        flag: "-fr"
+        type: "boolean"
