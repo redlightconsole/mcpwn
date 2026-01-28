@@ -1,6 +1,6 @@
 # mcpwn
 
-`mcpwn` is an MCP server that allows Large Language Models (LLMs) to execute security tools on your local machine.
+**mcpwn** is an MCP server that allows Large Language Models (LLMs) to execute security tools on your local machine.
 
 ## Table of Contents
 
@@ -49,7 +49,9 @@ Furthermore, `mcpwn` is cross-platform, so you can build the project for GNU/Lin
 
 ## Configuration
 
-Tools are defined in the `mcpwn.yaml` file located in the same directory as the executable.
+By default, `mcpwn` looks for a configuration file named `mcpwn.yaml` in the same directory as the executable. For system-wide installations, it also checks for a configuration file at `/etc/mcpwn/mcpwn.yaml`.
+
+You can easily extend `mcpwn` by adding new tool definitions to this file.
 
 ### Example `mcpwn.yaml`
 
