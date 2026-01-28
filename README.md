@@ -19,7 +19,7 @@
 
 ## Features
 
-- **Model Context Protocol**: fully compliant with the Model Context Protocol. it uses the [modelcontextprotocol/go-sdk](github.com/modelcontextprotocol/go-sdk).
+- **Model Context Protocol**: fully compliant with the Model Context Protocol. it uses the [modelcontextprotocol/go-sdk](https://github.com/modelcontextprotocol/go-sdk).
 - **Dynamic tool registration**: define tools (like `nmap`, `gobuster`, etc...) via a simple `mcpwn.yaml` file.
 - **Cross-platform**: compiles for Linux, macOS, and Windows.
 
