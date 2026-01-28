@@ -1,75 +1,120 @@
 # mcpwn
 
-A web application to remotely execute security tools and shell commands.
+`mcpwn` is an MCP server that allows Large Language Models (LLMs) to execute security tools on your local machine.
 
-It consists of two main components:
-- **`api-server`**: The worker. It receives commands via a REST API and executes them on the host machine.
-- **`mcp-server`**: The controller. It acts as a user-facing proxy that delegates tasks to the `api-server`.
+## Features
+
+- **Model Context Protocol**: fully compliant with the Model Context Protocol. it uses the [modelcontextprotocol/go-sdk](github.com/modelcontextprotocol/go-sdk).
+- **Dynamic tool registration**: define tools (like `nmap`, `gobuster`, etc...) via a simple `mcpwn.yaml` file.
+- **Cross-platform**: compiles for Linux, macOS, and Windows.
+
+## Installation
+
+### Prerequisites
+
+- [Go 1.25](https://go.dev/dl/) or later.
+- Security tools you want to use (e.g., `nmap`) must be installed and in your system `PATH`.
+
+## Security Warning
+
+This tool allows an LLM to execute commands on your machine.
+
+**Only use it with models you trust and in environments where execution is safe.**
+The tool implements basic safety checks, but it does not replace a proper sandbox.
+
+### Build from source
+
+```bash
+git clone https://gitlab.com/parrotsec/project/mcpwn.git
+cd mcpwn
+go build -o mcpwn cmd/mcpwn/main.go
+```
+
+## Configuration
+
+Tools are defined in the `mcpwn.yaml` file located in the same directory as the executable.
+
+### Example `mcpwn.yaml`
+
+```yaml
+tools:
+  - name: "nmap_scan"
+    description: "Nmap is a free and open source utility for network discovery and security auditing."
+    command: "nmap"
+    args:
+      - name: "target"
+        description: "Target IP/Domain"
+        required: true
+        positional: true
+      - name: "ports"
+        description: "Ports to scan (e.g. '80,443' or '-p-')"
+        flag: "-p"
+      - name: "fast_mode"
+        description: "Fast scan (-F)"
+        flag: "-F"
+        type: "boolean"
+```
+
+## Usage
+
+### Run Manually
+
+You can run the server directly to test if it loads your configuration correctly:
+
+```bash
+./mcpwn
+```
+
+The server communicates via `Stdio` and you will see log messages on `Stderr`.
+
+### Integration with Claude and Gemini (WIP)
+
+#### Claude Code
+
+Run the following command in your terminal:
+```bash
+claude mcp add --transport stdio mcpwn -- /path/to/your/mcpwn
+```
+
+#### Gemini
+To use `mcpwn` with **Gemini** (via Gemini CLI or other MCP-compatible Google clients), ensure your environment supports MCP and add the server to your settings:
+
+```json
+{
+  "mcpServers": {
+    "mcpwn": {
+      "command": "/path/to/your/mcpwn",
+      "args": [],
+      "transport": "stdio"
+    }
+  }
+}
+```
+
+*Note: Replace `/path/to/your/mcpwn` with the absolute path to your compiled binary.*
 
 ## Project Structure
 
 ```
-mcpwn/
-├── cmd/
-│   ├── api-server/main.go   # API server entrypoint
-│   └── mcp-server/main.go   # MCP server entrypoint
-├── internal/
-│   ├── api/                 # API handlers and router
-│   ├── client/              # Client for the api-server
-│   ├── command/             # Command execution logic
-│   └── models/              # Data structures
+├── LICENSE
+├── README.md
+├── cmd
+│   └── mcpwn
+│       └── main.go
 ├── go.mod
-└── README.md
+├── go.sum
+├── internal // logic for loading the YAML configuration.
+│   ├── config
+│   │   └── config.go
+│   ├── executor
+│   │   └── run.go
+│   └── server // MCP protocol implementation and tool routing.
+│       └── server.go
+├── mcpwn.yaml
+└── scripts
+    └── build.sh
 ```
 
-## Prerequisites
+## License
 
-- Go 1.25
-- Required command-line tools (e.g., `nmap`) must be installed and available in the `PATH` of the `api-server`'s machine.
-
-## Quickstart
-
-The API server and the MCP server run on the same machine.
-
-Open two terminals and run the following commands:
-
-### 1. Run the api-server
-
-```bash
-go build -o api-server ./cmd/api-server
-./api-server --port 5000
-```
-
-- --port: Port for the API server (default: 5000).
-- --timeout: Default command timeout in seconds (default: 180).
-
-### 2. Run the mcp-server
-```bash
-go build -o mcp-server ./cmd/mcp-server
-./mcp-server --port 8000 --server "http://localhost:5000"
-```
-
-- --port: Port for the MCP server (default: 8000).
-- --server: URL of the API server (default: http://localhost:5000).
-
-## API Usage
-
-All requests should be sent to the **mcp-server**.
-
-```bash
-curl -X POST -H "Content-Type: application/json" \
-  -d '{"command": "whoami"}' \
-  http://localhost:8000/tools/command
-```
-
-```bash
-curl -X POST -H "Content-Type: application/json" \
-  -d '{"target": "scanme.nmap.org", "ports": "80,443"}' \
-  http://localhost:8000/tools/nmap
-```
-
-Also, you can check the api-server status and available tools by hitting its `/health` endpoint directly:
-
-```bash
-curl http://localhost:5000/health
-```
+This project is licensed under the GPL v3.

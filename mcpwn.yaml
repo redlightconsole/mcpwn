@@ -1,0 +1,37 @@
+tools:
+  - name: "nmap_scan"
+    description: "Nmap is a free and open source utility for network discovery and security auditing."
+    command: "nmap"
+    args:
+      - name: "target"
+        description: "Target IP/Domain"
+        required: true
+        positional: true
+      - name: "ports"
+        description: "Ports to scan (e.g. '80,443' or '-p-')"
+        flag: "-p"
+      - name: "fast_mode"
+        description: "Fast scan (-F)"
+        flag: "-F"
+        type: "boolean"
+      - name: "service_info"
+        description: "Detect service version (-sV)"
+        flag: "-sV"
+        type: "boolean"
+
+  - name: "gobuster_dir"
+    description: "Gobuster is a high-performance directory/file, DNS and virtual host brute-forcing tool written in Go."
+    command: "gobuster"
+    fixed_args: ["dir", "--no-error"]
+    args:
+      - name: "url"
+        description: "Target URL"
+        required: true
+        flag: "-u"
+      - name: "wordlist"
+        description: "Path to wordlist"
+        required: true
+        flag: "-w"
+      - name: "extensions"
+        description: "File extensions (php,txt)"
+        flag: "-x"
