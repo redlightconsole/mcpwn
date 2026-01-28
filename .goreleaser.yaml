@@ -10,10 +10,10 @@ builds:
       - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.Date={{.Date}}
 
 archives:
-  - format: tar.gz
+  - formats: [tar.gz]
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
     files:
       - mcpwn.yaml
       - README.md
