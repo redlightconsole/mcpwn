@@ -2,6 +2,21 @@
 
 `mcpwn` is an MCP server that allows Large Language Models (LLMs) to execute security tools on your local machine.
 
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+  - [Prerequisites](#prerequisites)
+  - [Build from source](#build-from-source)
+- [Security Warning](#security-warning)
+- [Configuration](#configuration)
+  - [Example mcpwn.yaml](#example-mcpwnyaml)
+- [Usage](#usage)
+  - [Run Manually](#run-manually)
+  - [Integration with Claude and Gemini (WIP)](#integration-with-claude-and-gemini-wip)
+- [Project Structure](#project-structure)
+- [License](#license)
+
 ## Features
 
 - **Model Context Protocol**: fully compliant with the Model Context Protocol. it uses the [modelcontextprotocol/go-sdk](github.com/modelcontextprotocol/go-sdk).
