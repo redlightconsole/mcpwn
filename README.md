@@ -1,6 +1,6 @@
 # mcpwn
 
-**mcpwn** is an MCP server that allows Large Language Models (LLMs) to execute security tools on your local machine.
+**mcpwn** is an MCP server that allows Large Language Models (LLMs) to execute security tools on your local machine. It currently supports **4** tools out of the box: `nmap`, `gobuster`, `ffuf`, and `httpx`.
 
 ## Table of Contents
 
