@@ -12,3 +12,6 @@ release:
     GIT_DEPTH: 0
   script:
     - goreleaser release --clean
+  artifacts:
+    paths:
+      - dist/
