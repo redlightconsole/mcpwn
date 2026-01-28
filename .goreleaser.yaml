@@ -18,6 +18,22 @@ archives:
       - mcpwn.yaml
       - README.md
 
+nfpms:
+  - package_name: mcpwn
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}"
+    maintainer: 'ParrotSec Team <team@parrotsec.org>'
+    description: 'MCP server that allows LLMs to execute security tools on your local machine.'
+    homepage: 'https://gitlab.com/parrotsec/project/mcpwn'
+    license: GPL-3.0
+    formats:
+      - deb
+    contents:
+      - src: mcpwn.yaml
+        dst: /etc/mcpwn/mcpwn.yaml
+        type: config
+      - src: README.md
+        dst: /usr/share/doc/mcpwn/README.md
+
 checksum:
   name_template: 'checksums.txt'
 

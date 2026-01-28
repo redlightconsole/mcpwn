@@ -37,7 +37,12 @@ func main() {
 		slog.Error("Failed to get executable path", "error", err)
 		os.Exit(1)
 	}
+
+	// Try local config first, then /etc as a fallback option.
 	configPath := filepath.Join(filepath.Dir(exePath), "mcpwn.yaml")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		configPath = "/etc/mcpwn/mcpwn.yaml"
+	}
 
 	cfg, err := config.Load(configPath)
 	if err != nil {
