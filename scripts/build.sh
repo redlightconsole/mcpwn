@@ -5,8 +5,8 @@ APP="mcpwn"
 VERSION="${1:-dev}"
 DIST="dist"
 
-rm -rf $DIST
-mkdir -p $DIST/tmp
+rm -rf "$DIST"
+mkdir -p "$DIST/tmp"
 
 echo "Building ${APP} version ${VERSION}..."
 
@@ -15,13 +15,13 @@ TARGETS=("linux/amd64" "linux/arm64" "windows/amd64" "darwin/arm64")
 for target in "${TARGETS[@]}"; do
     IFS="/" read -r GOOS GOARCH <<< "$target"
     OUT_NAME="${APP}-${GOOS}-${GOARCH}"
-    BIN_NAME=$APP
+    BIN_NAME="$APP"
     
     if [ "$GOOS" == "windows" ]; then BIN_NAME="${APP}.exe"; fi
 
     echo " -> Compiling for $GOOS/$GOARCH..."
     
-    env GOOS=$GOOS GOARCH=$GOARCH go build \
+    env GOOS="$GOOS" GOARCH="$GOARCH" go build \
         -ldflags "-s -w -X main.Version=${VERSION} -X main.Commit=$(git rev-parse --short HEAD) -X main.Date=$(date +%F)" \
         -o "$DIST/tmp/$BIN_NAME" ./cmd/mcpwn/main.go
 
