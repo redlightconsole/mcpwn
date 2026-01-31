@@ -23,6 +23,7 @@ tools:
   - name: "gobuster_dir"
     description: "Gobuster is a high-performance directory/file, DNS and virtual host brute-forcing tool written in Go."
     command: "gobuster"
+    image: "parrotsec/gobuster"
     fixed_args: ["dir", "--no-error"]
     args:
       - name: "url"
@@ -40,6 +41,7 @@ tools:
   - name: "ffuf_fuzz"
     description: "ffuf is a fast web fuzzer written in Go. It allows for directory discovery, parameter fuzzing and more."
     command: "ffuf"
+    image: "parrotsec/ffuf"
     fixed_args: ["-s"]
     args:
       - name: "url"
