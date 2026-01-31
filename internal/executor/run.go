@@ -11,19 +11,25 @@ import (
 
 // SafeExecute runs a command and returns its combined output (stdout + stderr).
 // It uses a timeout to prevent tools from hanging indefinitely.
-// Also, it adds some basic security checks for command injection characters
-// (even if exec.Command is generally safe).
-func SafeExecute(ctx context.Context, command string, args []string) (string, error) {
+// If an image is provided, it runs the command inside a Docker container.
+func SafeExecute(ctx context.Context, command string, args []string, image string) (string, error) {
 	for _, arg := range args {
 		if strings.ContainsAny(arg, ";&|`$") {
 			return "", fmt.Errorf("unsafe characters detected in argument: %s", arg)
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, command, args...)
+	var cmd *exec.Cmd
+	if image != "" {
+		dockerArgs := []string{"run", "--rm", "-i", image, command}
+		dockerArgs = append(dockerArgs, args...)
+		cmd = exec.CommandContext(ctx, "docker", dockerArgs...)
+	} else {
+		cmd = exec.CommandContext(ctx, command, args...)
+	}
 
 	// Combine stdout and stderr to give the LLM full visibility on errors
 	output, err := cmd.CombinedOutput()

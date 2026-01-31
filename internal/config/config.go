@@ -11,6 +11,7 @@ type Tool struct {
 	Name        string   `yaml:"name"`        // Tool name (used in MCP)
 	Description string   `yaml:"description"` // Tool description
 	Command     string   `yaml:"command"`     // Binary command to execute
+	Image       string   `yaml:"image"`       // Docker image (optional)
 	FixedArgs   []string `yaml:"fixed_args"`  // Arguments passed to the tool
 	Args        []Arg    `yaml:"args"`        // Dynamic arguments mapped from MCP
 }
