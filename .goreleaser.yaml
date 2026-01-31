@@ -27,6 +27,8 @@ nfpms:
     license: GPL-3.0
     formats:
       - deb
+    dependencies:
+      - docker.io
     contents:
       - src: mcpwn.yaml
         dst: /etc/mcpwn/mcpwn.yaml
