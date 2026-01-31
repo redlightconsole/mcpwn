@@ -1,6 +1,6 @@
 # mcpwn
 
-**mcpwn** is an MCP server that allows Large Language Models (LLMs) to execute security tools on your local machine. It currently supports **4** tools out of the box: `nmap`, `gobuster`, `ffuf`, and `httpx`.
+**mcpwn** is an MCP server that allows Large Language Models (LLMs) to execute security tools on your local machine. It currently supports **5** tools out of the box: `nmap`, `gobuster`, `ffuf`, `httpx`, and `sqlmap`.
 
 ## Table of Contents
 
@@ -51,7 +51,7 @@ Furthermore, `mcpwn` is cross-platform, so you can build the project for GNU/Lin
 
 By default, `mcpwn` looks for a configuration file named `mcpwn.yaml` in the same directory as the executable. For system-wide installations, it also checks for a configuration file at `/etc/mcpwn/mcpwn.yaml`.
 
-You can easily extend `mcpwn` by adding new tool definitions to this file.
+You can easily extend `mcpwn` by adding new tool definitions to this file. **Docker support** is also available: if you specify an `image` for a tool, `mcpwn` will automatically run it inside a temporary Docker container for increased security and isolation.
 
 ### Example `mcpwn.yaml`
 
