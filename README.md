@@ -25,17 +25,23 @@
 
 ## Installation
 
-### Prerequisites
+### Prerequisites and Info
 
 - [Go 1.25](https://go.dev/dl/) or later.
-- Security tools you want to use (e.g., `nmap`) must be installed and in your system `PATH`.
+- Docker
 
-## Security Warning
+You can use `mcpwn` with your locally installed tools or with Docker (recommended).
+
+If you decide not to use Docker, you can still use it but the security tools you want to use (e.g., `nmap`) must be installed and in your system `PATH`.
+
+---
+**Security Warning!**
 
 This tool allows an LLM to execute commands on your machine.
 
 **Only use it with models you trust and in environments where execution is safe.**
 The tool implements basic safety checks, but it does not replace a proper sandbox.
+---
 
 ### Build from source
 
@@ -146,3 +152,7 @@ To use `mcpwn` with the [Gemini CLI](https://github.com/google-gemini/gemini-cli
 ## License
 
 This project is licensed under the GPL v3.
+
+## Contact
+
+For further information and implementation, please contact `danterolle@parrotsec.org` or `team@parrotsec.org`.
