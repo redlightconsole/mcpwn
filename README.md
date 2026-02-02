@@ -74,6 +74,12 @@ tools:
         description: "Fast scan (-F)"
         flag: "-F"
         type: "boolean"
+      - name: "scripts"
+        description: "Comma-separated list of NSE scripts to run (e.g. 'http-enum', 'vuln', ...)"
+        flag: "--script"
+      - name: "script_args"
+        description: "Arguments for NSE scripts"
+        flag: "--script-args"
 ```
 
 ## Usage
@@ -120,6 +126,7 @@ To use `mcpwn` with the [Gemini CLI](https://github.com/google-gemini/gemini-cli
 4. **Use**: inside the Gemini session, 
 5. you can verify the connection by typing `/mcp list`. You can then ask the model to run your tools, e.g.:
    > Scan localhost using nmap_scan in fast mode.
+   > Search for vulnerabilities on 192.168.1.1 using nmap_scan with the 'vuln' script.
 
 *Note: If you modify `mcpwn.yaml`, you must restart the Gemini CLI session to refresh the tool definitions.*
 
