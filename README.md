@@ -113,8 +113,10 @@ To use `mcpwn` with the [Gemini CLI](https://github.com/google-gemini/gemini-cli
    ```bash
    gemini
    ```
+   ![Gemini CLI with mcpwn](example.png)
 
-4. **Use**: inside the Gemini session, you can verify the connection by typing `/mcp list`. You can then ask the model to run your tools, e.g.:
+4. **Use**: inside the Gemini session, 
+5. you can verify the connection by typing `/mcp list`. You can then ask the model to run your tools, e.g.:
    > Scan localhost using nmap_scan in fast mode.
 
 *Note: If you modify `mcpwn.yaml`, you must restart the Gemini CLI session to refresh the tool definitions.*
