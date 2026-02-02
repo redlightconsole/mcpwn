@@ -39,7 +39,7 @@ If you decide not to use Docker, you can still use it but the security tools you
 
 This tool allows an LLM to execute commands on your machine.
 
-**Only use it with models you trust and in environments where execution is safe.**
+Only use it with models you trust and in environments where execution is safe.
 The tool implements basic safety checks, but it does not replace a proper sandbox.
 ---
 
