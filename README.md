@@ -6,7 +6,7 @@
 
 - [Features](#features)
 - [Installation](#installation)
-  - [Prerequisites](#prerequisites)
+  - [Prerequisites and Info](#prerequisites-and-info)
   - [Build from source](#build-from-source)
 - [Security Warning](#security-warning)
 - [Configuration](#configuration)
@@ -16,6 +16,7 @@
   - [Integration with Claude and Gemini (WIP)](#integration-with-claude-and-gemini-wip)
 - [Project Structure](#project-structure)
 - [License](#license)
+- [Contact](#contact)
 
 ## Features
 
