@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"mcpwn/internal/config"
 	"mcpwn/internal/executor"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -146,6 +147,10 @@ func buildArgs(t *config.Tool, inputs map[string]interface{}) ([]string, error) 
 			sVal := fmt.Sprintf("%v", val)
 			if def.Positional {
 				positional = append(positional, sVal)
+			} else if def.Flag == "" {
+				// If no flag is defined, split the value and add as raw arguments
+				parts := strings.Fields(sVal)
+				args = append(args, parts...)
 			} else {
 				args = append(args, def.Flag, sVal)
 			}

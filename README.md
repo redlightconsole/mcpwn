@@ -1,20 +1,20 @@
 # mcpwn
 
-**mcpwn** is an MCP server that allows Large Language Models (LLMs) to execute security tools on your local machine. It currently supports **5** tools out of the box: `nmap`, `gobuster`, `ffuf`, `httpx`, and `sqlmap`.
+**mcpwn** is an MCP server that allows Large Language Models (LLMs) to execute security tools on your local machine. It currently supports **7** tools out of the box: `nmap`, `gobuster`, `ffuf`, `httpx`, `sqlmap`, `msfvenom`, and `msfconsole`.
 
 ## Table of Contents
 
 - [Features](#features)
+- [Project Structure](#project-structure)
 - [Installation](#installation)
   - [Prerequisites and Info](#prerequisites-and-info)
+  - [Security Architecture](#security-architecture)
   - [Build from source](#build-from-source)
-- [Security Warning](#security-warning)
 - [Configuration](#configuration)
   - [Example mcpwn.yaml](#example-mcpwnyaml)
 - [Usage](#usage)
   - [Run Manually](#run-manually)
   - [Integration with Claude and Gemini (WIP)](#integration-with-claude-and-gemini-wip)
-- [Project Structure](#project-structure)
 - [License](#license)
 - [Contact](#contact)
 
@@ -22,7 +22,31 @@
 
 - **Model Context Protocol**: fully compliant with the Model Context Protocol. it uses the [modelcontextprotocol/go-sdk](https://github.com/modelcontextprotocol/go-sdk).
 - **Dynamic tool registration**: define tools (like `nmap`, `gobuster`, etc...) via a simple `mcpwn.yaml` file.
+- **Flexible arguments**: supports `extra_args` to pass any valid CLI flag to tools, providing full flexibility.
+- **Docker integration**: runs tools in isolated containers for security and easy dependency management.
 - **Cross-platform**: compiles for Linux, macOS, and Windows.
+
+## Project Structure
+
+```
+├── LICENSE
+├── README.md
+├── cmd
+│   └── mcpwn
+│       └── main.go
+├── go.mod
+├── go.sum
+├── internal // logic for loading the YAML configuration.
+│   ├── config
+│   │   └── config.go
+│   ├── executor
+│   │   └── run.go
+│   └── server // MCP protocol implementation and tool routing.
+│       └── server.go
+├── mcpwn.yaml
+└── scripts
+    └── build.sh
+```
 
 ## Installation
 
@@ -35,10 +59,20 @@ You can use `mcpwn` with your locally installed tools or with Docker (recommende
 
 If you decide not to use Docker, you can still use it but the security tools you want to use (e.g., `nmap`) must be installed and in your system `PATH`.
 
-> **Security Warning!**
-> This tool allows an LLM to execute commands on your machine. 
-> Only use it with models you trust and in environments where execution is safe.
-The tool implements basic safety checks, but it does not replace a proper sandbox.
+By default, tools run inside **Docker containers**, which provides a strong layer of isolation.
+
+### Security Architecture
+
+mcpwn is designed to prevent unauthorized access to your host machine:
+
+1.  **Direct execution**: The server uses Go's `exec.Command`, which executes binaries directly without involving a system shell (like `/bin/sh` or `cmd.exe`). This means that special characters are passed as literal arguments rather than being interpreted as command separators.
+2.  **Hardened Docker isolation**: Tools run in ephemeral containers with:
+    - `--cap-drop=ALL`: All Linux capabilities are dropped by default.
+    - `--cap-add=NET_RAW`: Only the minimum required capability for network tools (like nmap raw packets) is granted.
+    - `--security-opt=no-new-privileges`: Processes cannot gain new privileges (blocking `sudo` or `setuid` exploits).
+    - No host volumes or sockets are mounted.
+3.  **Fire and forget**: Containers are run with the `--rm` flag. Any change inside the container is permanently destroyed upon completion.
+4.  **Argument Injection**: While the LLM can pass flags (e.g., `--os-shell`), the impact is strictly confined to the isolated, unprivileged container.
 
 ### Build from source
 
@@ -63,24 +97,19 @@ tools:
   - name: "nmap_scan"
     description: "Nmap is a free and open source utility for network discovery and security auditing."
     command: "nmap"
+    image: "parrotsec/nmap"
     args:
       - name: "target"
         description: "Target IP/Domain"
         required: true
         positional: true
-      - name: "ports"
-        description: "Ports to scan (e.g. '80,443' or '-p-')"
-        flag: "-p"
-      - name: "fast_mode"
-        description: "Fast scan (-F)"
-        flag: "-F"
+      - name: "aggressive"
+        description: "Aggressive scan (-A)"
+        flag: "-A"
         type: "boolean"
-      - name: "scripts"
-        description: "Comma-separated list of NSE scripts to run (e.g. 'http-enum', 'vuln', ...)"
-        flag: "--script"
-      - name: "script_args"
-        description: "Arguments for NSE scripts"
-        flag: "--script-args"
+      - name: "extra_args"
+        description: "Any additional nmap arguments"
+        flag: ""
 ```
 
 ## Usage
@@ -130,28 +159,6 @@ To use `mcpwn` with the [Gemini CLI](https://github.com/google-gemini/gemini-cli
    > Search for vulnerabilities on 192.168.1.1 using nmap_scan with the 'vuln' script.
 
 *Note: If you modify `mcpwn.yaml`, you must restart the Gemini CLI session to refresh the tool definitions.*
-
-## Project Structure
-
-```
-├── LICENSE
-├── README.md
-├── cmd
-│   └── mcpwn
-│       └── main.go
-├── go.mod
-├── go.sum
-├── internal // logic for loading the YAML configuration.
-│   ├── config
-│   │   └── config.go
-│   ├── executor
-│   │   └── run.go
-│   └── server // MCP protocol implementation and tool routing.
-│       └── server.go
-├── mcpwn.yaml
-└── scripts
-    └── build.sh
-```
 
 ## License
 

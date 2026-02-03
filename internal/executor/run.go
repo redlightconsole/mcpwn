@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
-	"strings"
 	"time"
 )
 
@@ -13,18 +12,18 @@ import (
 // It uses a timeout to prevent tools from hanging indefinitely.
 // If an image is provided, it runs the command inside a Docker container.
 func SafeExecute(ctx context.Context, command string, args []string, image string) (string, error) {
-	for _, arg := range args {
-		if strings.ContainsAny(arg, ";&|`$") {
-			return "", fmt.Errorf("unsafe characters detected in argument: %s", arg)
-		}
-	}
-
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
 	var cmd *exec.Cmd
 	if image != "" {
-		dockerArgs := []string{"run", "--rm", "-i", image, command}
+		dockerArgs := []string{
+			"run", "--rm", "-i",
+			"--cap-drop", "ALL",
+			"--cap-add", "NET_RAW",
+			"--security-opt", "no-new-privileges",
+			image, command,
+		}
 		dockerArgs = append(dockerArgs, args...)
 		cmd = exec.CommandContext(ctx, "docker", dockerArgs...)
 	} else {
