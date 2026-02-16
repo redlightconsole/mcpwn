@@ -21,7 +21,7 @@ func SafeExecute(ctx context.Context, command string, args []string, image strin
 			"run", "--rm", "-i",
 			"--cap-drop", "ALL",
 			"--cap-add", "NET_RAW",
-			"--security-opt", "no-new-privileges",
+			"--cap-add", "NET_ADMIN",
 			image, command,
 		}
 		dockerArgs = append(dockerArgs, args...)
