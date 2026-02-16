@@ -1,0 +1,17 @@
+Source: mcpwn
+Section: utils
+Priority: optional
+Uploaders: Dario "danterolle" Camonita <danterolle@parrotsec.org>
+Maintainer: Dario "danterolle" Camonita <danterolle@parrotsec.org>
+Build-Depends: debhelper-compat (= 13), dh-golang, golang-any
+Standards-Version: 4.7.0
+Homepage: https://gitlab.com/parrotsec/project/mcpwn
+Rules-Requires-Root: no
+
+Package: mcpwn
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, docker.io
+Description: MCP server that allows LLMs to execute security tools
+ MCPwn is a Model Context Protocol (MCP) server that provides a bridge
+ between Large Language Models and local security tools, allowing
+ automated execution and analysis in a controlled environment.
