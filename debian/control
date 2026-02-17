@@ -1,6 +1,5 @@
 Source: mcpwn
 XS-Go-Import-Path: mcpwn
-
 Section: utils
 Priority: optional
 Uploaders: Dario "danterolle" Camonita <danterolle@parrotsec.org>
