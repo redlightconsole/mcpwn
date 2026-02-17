@@ -3,6 +3,8 @@
 export DH_GOPKG := mcpwn
 export DH_GOLANG_GO_GENERATE := 1
 export DH_GOLANG_INSTALL_ALL := 1
+export GO111MODULE := on
+export GOFLAGS := -mod=vendor
 
 VERSION := $(shell dpkg-parsechangelog -S Version | cut -d- -f1)
 DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
