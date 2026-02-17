@@ -1,8 +1,18 @@
-mcpwn (1.1.1+parrot1) echo; urgency=medium
+mcpwn (1.1.2-0parrot1) echo; urgency=medium
 
-  * Remove quilt revision from native package version.
+  [ Dario Camonita ]
+  * New upstream release.
+  * Improve build system configuration (gbp.conf, source/options).
+  * Fix missing newline in mcpwn.yaml.
 
- -- Lorenzo "Palinuro" Faletra <palinuro@parrotsec.org>  Thu, 19 Feb 2026 13:46:15 +0100
+ -- Dario "danterolle" Camonita <danterolle@parrotsec.org>  Tue, 17 Feb 2026 15:10:26 +0100
+
+mcpwn (1.1.1-0parrot2) echo; urgency=medium
+
+  [ Dario Camonita ]
+  * chore: change debian format to quilt
+
+ -- Dario "danterolle" Camonita <danterolle@parrotsec.org>  Mon, 16 Feb 2026 14:00:58 +0100
 
 mcpwn (1.1.1-0parrot1) echo; urgency=medium
 

@@ -1,6 +1,6 @@
 module mcpwn
 
-go 1.25.1
+go 1.24
 
 require (
 	github.com/modelcontextprotocol/go-sdk v1.2.0

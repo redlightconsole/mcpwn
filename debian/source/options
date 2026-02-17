@@ -1,0 +1,1 @@
+extend-diff-ignore = "(^|/)(.gemini|.*\.png|.*_test\.go)$"
