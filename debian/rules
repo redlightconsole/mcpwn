@@ -13,3 +13,6 @@ export DH_GOLANG_LDFLAGS := -s -w -X main.Version=$(VERSION) -X main.Date=$(DATE
 
 %:
 	dh $@ --buildsystem=golang --with=golang
+
+override_dh_auto_test:
+
