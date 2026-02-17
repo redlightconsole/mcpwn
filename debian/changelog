@@ -1,3 +1,12 @@
+mcpwn (1.1.2-0parrot1) echo; urgency=medium
+
+  [ Dario Camonita ]
+  * New upstream release.
+  * Improve build system configuration (gbp.conf, source/options).
+  * Fix missing newline in mcpwn.yaml.
+
+ -- Dario "danterolle" Camonita <danterolle@parrotsec.org>  Tue, 17 Feb 2026 15:10:26 +0100
+
 mcpwn (1.1.1-0parrot2) echo; urgency=medium
 
   [ Dario Camonita ]
