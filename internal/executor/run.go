@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os/exec"
 	"time"
 )
@@ -18,6 +19,8 @@ func SafeExecute(ctx context.Context, command string, args []string, image strin
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
+	slog.DebugContext(ctx, "Preparing command execution", "command", command, "image", image, "args", args)
+
 	var cmd *exec.Cmd
 	if image != "" {
 		dockerArgs := []string{
@@ -29,6 +32,7 @@ func SafeExecute(ctx context.Context, command string, args []string, image strin
 		}
 		dockerArgs = append(dockerArgs, args...)
 		cmd = exec.CommandContext(ctx, "docker", dockerArgs...)
+		slog.DebugContext(ctx, "Running inside docker", "docker_args", dockerArgs)
 	} else {
 		cmd = exec.CommandContext(ctx, command, args...)
 	}
@@ -39,10 +43,13 @@ func SafeExecute(ctx context.Context, command string, args []string, image strin
 	result := string(output)
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			slog.WarnContext(ctx, "Command execution timed out", "command", command)
 			return result + "\n[ERROR] Command exceeded execution time limit.", nil
 		}
+		slog.ErrorContext(ctx, "Command execution failed", "command", command, "error", err)
 		return fmt.Sprintf("Exit Code Error: %v\nOutput:\n%s", err, result), nil
 	}
 
+	slog.DebugContext(ctx, "Command execution completed successfully", "command", command)
 	return result, nil
 }

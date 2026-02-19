@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -25,12 +26,12 @@ type Arg struct {
 	Type        string `yaml:"type"`        // data type: string or boolean
 }
 
-// Config list of configured tools
 type Config struct {
 	Tools []Tool `yaml:"tools"`
 }
 
 func Load(path string) (*Config, error) {
+	slog.Info("Loading configuration", "path", path)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, fmt.Errorf("configuration file not found: %s", path)
 	}
