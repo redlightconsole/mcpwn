@@ -10,6 +10,7 @@
   - [Prerequisites and Info](#prerequisites-and-info)
   - [Security Architecture](#security-architecture)
   - [Build from source](#build-from-source)
+  - [Automated Builds & Packaging](#automated-builds--packaging)
 - [Configuration](#configuration)
   - [Example mcpwn.yaml](#example-mcpwnyaml)
 - [Usage](#usage)
@@ -24,28 +25,27 @@
 - **Dynamic tool registration**: define tools (like `nmap`, `gobuster`, etc...) via a simple `mcpwn.yaml` file.
 - **Flexible arguments**: supports `extra_args` to pass any valid CLI flag to tools, providing full flexibility.
 - **Docker integration**: runs tools in isolated containers for security and easy dependency management.
-- **Cross-platform**: compiles for Linux, macOS, and Windows.
+- **Cross-platform**: compiles for Linux, macOS, and Windows. Automated releases are built via Goreleaser, and `.deb` packaging is supported for Debian-based systems.
 
 ## Project Structure
 
-```
-├── LICENSE
-├── README.md
+```text
 ├── cmd
-│   └── mcpwn
-│       └── main.go
-├── go.mod
-├── go.sum
-├── internal // logic for loading the YAML configuration.
-│   ├── config
-│   │   └── config.go
-│   ├── executor
-│   │   └── run.go
-│   └── server // MCP protocol implementation and tool routing.
-│       └── server.go
-├── mcpwn.yaml
-└── scripts
-    └── build.sh
+│   └── mcpwn                
+│       └── main.go
+├── debian
+├── internal
+│   ├── config                // YAML configuration loader
+│   │   ├── config.go
+│   │   └── config_test.go
+│   ├── executor              
+│   │   ├── run.go
+│   │   └── run_test.go
+│   └── server                // MCP protocol implementation and tool routing
+│       ├── server.go
+│       └── server_test.go
+├── mcpwn.yaml                // Default MCP tools configuration out-of-the-box
+└── go.mod & go.sum
 ```
 
 ## Installation
@@ -69,7 +69,6 @@ mcpwn is designed to prevent unauthorized access to your host machine:
 2.  **Hardened Docker isolation**: Tools run in ephemeral containers with:
     - `--cap-drop=ALL`: All Linux capabilities are dropped by default.
     - `--cap-add=NET_RAW`: Only the minimum required capability for network tools (like nmap raw packets) is granted.
-    - `--security-opt=no-new-privileges`: Processes cannot gain new privileges (blocking `sudo` or `setuid` exploits).
     - No host volumes or sockets are mounted.
 3.  **Fire and forget**: Containers are run with the `--rm` flag. Any change inside the container is permanently destroyed upon completion.
 4.  **Argument Injection**: While the LLM can pass flags (e.g., `--os-shell`), the impact is strictly confined to the isolated, unprivileged container.
@@ -82,7 +81,19 @@ cd mcpwn
 go build -o mcpwn cmd/mcpwn/main.go
 ```
 
-Furthermore, `mcpwn` is cross-platform, so you can build the project for GNU/Linux, macOS, and Windows. Please see `/scripts/build.sh`.
+Furthermore, `mcpwn` is cross-platform, so you can build the project for GNU/Linux, macOS, and Windows. 
+
+### Automated Builds & Packaging
+
+We can use GoReleaser for automated build and creation of `.tar.gz` and `.deb` archives:
+```bash
+goreleaser build --snapshot --clean
+```
+
+For Debian-based systems like ParrotOS, a standard `debian/` directory is also provided for creating packages natively:
+```bash
+dpkg-buildpackage -us -uc -b # or via sbuild
+```
 
 ## Configuration
 
