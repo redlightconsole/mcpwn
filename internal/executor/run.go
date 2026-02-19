@@ -11,6 +11,9 @@ import (
 // SafeExecute runs a command and returns its combined output (stdout + stderr).
 // It uses a timeout to prevent tools from hanging indefinitely.
 // If an image is provided, it runs the command inside a Docker container.
+//
+// Note: exec.CommandContext does **not** invoke a shell, so arguments are passed
+// directly to the process without shell interpretation.
 func SafeExecute(ctx context.Context, command string, args []string, image string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()

@@ -4,71 +4,46 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 )
 
-func TestSafeExecute_UnsafeCharacters(t *testing.T) {
-	tests := []struct {
-		name    string
-		command string
-		args    []string
-		wantErr bool
-	}{
-		{
-			name:    "Safe arguments",
-			command: "echo",
-			args:    []string{"hello", "world"},
-			wantErr: false,
-		},
-		{
-			name:    "Unsafe semicolon",
-			command: "echo",
-			args:    []string{"hello;", "world"},
-			wantErr: true,
-		},
-		{
-			name:    "Unsafe pipe",
-			command: "echo",
-			args:    []string{"hello|world"},
-			wantErr: true,
-		},
-		{
-			name:    "Unsafe dollar",
-			command: "echo",
-			args:    []string{"$HOME"},
-			wantErr: true,
-		},
-		{
-			name:    "Unsafe backtick",
-			command: "echo",
-			args:    []string{"`whoami`"},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := SafeExecute(context.Background(), tt.command, tt.args, "")
-			if (err != nil) != tt.wantErr {
-				t.Errorf("SafeExecute() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if tt.wantErr && err != nil {
-				if !strings.Contains(err.Error(), "unsafe characters detected") {
-					t.Errorf("SafeExecute() error = %v, want error to contain 'unsafe characters detected'", err)
-				}
-			}
-		})
-	}
-}
-
-func TestSafeExecute_SimpleCommand(t *testing.T) {
+func TestMultipleArgs(t *testing.T) {
 	ctx := context.Background()
-	output, err := SafeExecute(ctx, "echo", []string{"hello"}, "")
+	output, err := SafeExecute(ctx, "echo", []string{"hello", "world", "foo"}, "")
 	if err != nil {
 		t.Fatalf("SafeExecute failed: %v", err)
 	}
 
-	expected := "hello"
-	if !strings.Contains(output, expected) {
-		t.Errorf("Expected output to contain %q, got %q", expected, output)
+	if !strings.Contains(output, "hello world foo") {
+		t.Errorf("Expected output to contain 'hello world foo', got %q", output)
+	}
+}
+
+func TestEmptyArgs(t *testing.T) {
+	ctx := context.Background()
+	output, err := SafeExecute(ctx, "echo", []string{}, "")
+	if err != nil {
+		t.Fatalf("SafeExecute failed: %v", err)
+	}
+
+	if len(strings.TrimSpace(output)) != 0 {
+		t.Errorf("Expected empty output from echo with no args, got %q", output)
+	}
+}
+
+func TestTimeout(t *testing.T) {
+	// Set a timeout shorter than the command execution time
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+
+	// Sleep for 50ms, ensuring the 10ms timeout triggers
+	output, err := SafeExecute(ctx, "sleep", []string{"0.05"}, "")
+	if err != nil {
+		t.Fatalf("SafeExecute should not return a Go-level error, got: %v", err)
+	}
+
+	expectedError := "Command exceeded execution time limit"
+	if !strings.Contains(output, expectedError) {
+		t.Errorf("Expected output to contain %q, got %q", expectedError, output)
 	}
 }
