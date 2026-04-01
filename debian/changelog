@@ -1,3 +1,15 @@
+mcpwn (1.2.0-0parrot1) echo; urgency=medium
+
+  * test: update `run.go` tests
+  * chore: use slog for logging
+  * chore: remove build.sh since we use goreleaser
+  * add mcpwn logo
+  * docs: update README.md about build process
+  * feat: introduce DockerConfig struct
+  * docs: update README.md about the docker options
+
+ -- Dario "danterolle" Camonita <danterolle@parrotsec.org>  Wed, 01 Apr 2026 09:14:59 +0100
+
 mcpwn (1.1.2-0parrot2) echo; urgency=medium
 
   [ Dario Camonita ]
