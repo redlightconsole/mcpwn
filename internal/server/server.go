@@ -91,8 +91,12 @@ func (ms *MCPServer) handleCallTool(ctx context.Context, req *mcp.CallToolReques
 		}, nil
 	}
 
-	ms.logger.InfoContext(ctx, "Executing tool", "command", selectedTool.Command, "args", cliArgs, "image", selectedTool.Image)
-	output, err := executor.SafeExecute(ctx, selectedTool.Command, cliArgs, selectedTool.Image)
+	image := ""
+	if selectedTool.Docker != nil {
+		image = selectedTool.Docker.Image
+	}
+	ms.logger.InfoContext(ctx, "Executing tool", "command", selectedTool.Command, "args", cliArgs, "image", image)
+	output, err := executor.Execute(ctx, selectedTool, cliArgs)
 	if err != nil {
 		ms.logger.ErrorContext(ctx, "Execution failure", "tool", selectedTool.Name, "error", err)
 		return &mcp.CallToolResult{

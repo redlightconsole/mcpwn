@@ -8,13 +8,23 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type DockerConfig struct {
+	Image        string   `yaml:"image"`
+	Capabilities []string `yaml:"capabilities"`
+	Memory       string   `yaml:"memory"`
+	CPUs         string   `yaml:"cpus"`
+	Network      string   `yaml:"network"`
+	TmpDirs      []string `yaml:"tmp_dirs"`
+	Volumes      []string `yaml:"volumes"`
+}
+
 type Tool struct {
-	Name        string   `yaml:"name"`        // Tool name (used in MCP)
-	Description string   `yaml:"description"` // Tool description
-	Command     string   `yaml:"command"`     // Binary command to execute
-	Image       string   `yaml:"image"`       // Docker image (optional)
-	FixedArgs   []string `yaml:"fixed_args"`  // Arguments passed to the tool
-	Args        []Arg    `yaml:"args"`        // Dynamic arguments mapped from MCP
+	Name        string        `yaml:"name"`        // Tool name (used in MCP)
+	Description string        `yaml:"description"` // Tool description
+	Command     string        `yaml:"command"`     // Binary command to execute
+	Docker      *DockerConfig `yaml:"docker"`      // Docker configuration (optional)
+	FixedArgs   []string      `yaml:"fixed_args"`  // Arguments passed to the tool
+	Args        []Arg         `yaml:"args"`        // Dynamic arguments mapped from MCP
 }
 
 type Arg struct {

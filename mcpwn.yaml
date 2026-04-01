@@ -2,7 +2,9 @@ tools:
   - name: "nmap_scan"
     description: "Nmap is a free and open source utility for network discovery and security auditing."
     command: "nmap"
-    image: "parrotsec/nmap"
+    docker:
+      image: "parrotsec/nmap"
+      capabilities: ["NET_RAW", "NET_ADMIN"]
     args:
       - name: "target"
         description: "Target IP/Domain"
@@ -49,7 +51,9 @@ tools:
   - name: "gobuster_dir"
     description: "Gobuster is a high-performance directory/file, DNS and virtual host brute-forcing tool written in Go."
     command: "gobuster"
-    image: "parrotsec/gobuster"
+    docker:
+      image: "parrotsec/gobuster"
+      cpus: "0"
     fixed_args: ["dir", "--no-error"]
     args:
       - name: "url"
@@ -83,7 +87,9 @@ tools:
   - name: "ffuf_fuzz"
     description: "ffuf is a fast web fuzzer written in Go. It allows for directory discovery, parameter fuzzing and more."
     command: "ffuf"
-    image: "parrotsec/ffuf"
+    docker:
+      image: "parrotsec/ffuf"
+      cpus: "0"
     fixed_args: ["-s"]
     args:
       - name: "url"
@@ -120,7 +126,9 @@ tools:
   - name: "httpx_probe"
     description: "httpx is a fast and multi-purpose HTTP toolkit that allows running multiple probes."
     command: "httpx"
-    image: "projectdiscovery/httpx"
+    docker:
+      image: "projectdiscovery/httpx"
+      cpus: "0"
     fixed_args: ["-silent", "-nc"]
     args:
       - name: "target"
@@ -162,7 +170,9 @@ tools:
   - name: "sqlmap"
     description: "sqlmap is an open source penetration testing tool that automates the process of detecting and exploiting SQL injection flaws."
     command: "sqlmap"
-    image: "parrotsec/sqlmap"
+    docker:
+      image: "parrotsec/sqlmap"
+      tmp_dirs: ["/tmp", "/root"]
     fixed_args: ["--batch", "--random-agent"]
     args:
       - name: "url"
@@ -203,7 +213,11 @@ tools:
   - name: "msfvenom"
     description: "Metasploit payload generator. Used to create reverse shells, etc..."
     command: "msfvenom"
-    image: "parrotsec/metasploit-framework"
+    docker:
+      image: "parrotsec/metasploit-framework"
+      memory: "1g"
+      tmp_dirs: ["/tmp", "/root"]
+      volumes: ["/tmp/mcpwn_workdir:/workdir"]
     args:
       - name: "payload"
         description: "Payload to use (e.g., windows/x64/meterpreter/reverse_tcp)"
@@ -219,7 +233,11 @@ tools:
   - name: "msfconsole_run"
     description: "Run specific Metasploit commands non-interactively."
     command: "msfconsole"
-    image: "parrotsec/metasploit-framework"
+    docker:
+      image: "parrotsec/metasploit-framework"
+      memory: "2g"
+      tmp_dirs: ["/tmp", "/root"]
+      network: "host"
     fixed_args: ["-q", "-n"]
     args:
       - name: "commands"
