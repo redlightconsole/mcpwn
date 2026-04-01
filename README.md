@@ -66,12 +66,16 @@ By default, tools run inside **Docker containers**, which provides a strong laye
 mcpwn is designed to prevent unauthorized access to your host machine:
 
 1.  **Direct execution**: The server uses Go's `exec.Command`, which executes binaries directly without involving a system shell (like `/bin/sh` or `cmd.exe`). This means that special characters are passed as literal arguments rather than being interpreted as command separators.
-2.  **Hardened Docker isolation**: Tools run in ephemeral containers with:
-    - `--cap-drop=ALL`: All Linux capabilities are dropped by default.
-    - `--cap-add=NET_RAW`: Only the minimum required capability for network tools (like nmap raw packets) is granted.
-    - No host volumes or sockets are mounted.
-3.  **Fire and forget**: Containers are run with the `--rm` flag. Any change inside the container is permanently destroyed upon completion.
-4.  **Argument Injection**: While the LLM can pass flags (e.g., `--os-shell`), the impact is strictly confined to the isolated, unprivileged container.
+2.  **Docker isolation**: Tools run in ephemeral containers with defaults:
+    - `--cap-drop=ALL` and `--security-opt=no-new-privileges`
+    - `--read-only`: The container's root filesystem is mounted as read-only.
+    - **Resource Limits**: Containers are conservatively limited to `512MB` of RAM and `1` CPU.
+3.  **Granular Customization**: Through `mcpwn.yaml`, you can selectively override these defaults per tool:
+    - Mount temporary in-memory filesystems (`tmp_dirs: ["/tmp", "/root"]`).
+    - Disable CPU limits for heavy multithreaded fuzzers (`cpus: "0"`).
+    - Expose selected network interfaces (`network: "host"`) or paths (`volumes: []`).
+    - Grant explicit capabilities (e.g., `capabilities: ["NET_RAW"]`).
+4.  **Fire and forget**: Containers are run with the `--rm` flag.
 
 ### Build from source
 
@@ -99,7 +103,7 @@ dpkg-buildpackage -us -uc -b # or via sbuild
 
 By default, `mcpwn` looks for a configuration file named `mcpwn.yaml` in the same directory as the executable. For system-wide installations, it also checks for a configuration file at `/etc/mcpwn/mcpwn.yaml`.
 
-You can easily extend `mcpwn` by adding new tool definitions to this file. **Docker support** is also available: if you specify an `image` for a tool, `mcpwn` will automatically run it inside a temporary Docker container for increased security and isolation.
+You can easily extend `mcpwn` by adding new tool definitions to this file. **Docker support** is also available: if you specify a `docker` configuration block for a tool, `mcpwn` will automatically run it inside a temporary Docker container.
 
 ### Example `mcpwn.yaml`
 
@@ -108,7 +112,11 @@ tools:
   - name: "nmap_scan"
     description: "Nmap is a free and open source utility for network discovery and security auditing."
     command: "nmap"
-    image: "parrotsec/nmap"
+    docker:
+      image: "parrotsec/nmap"
+      capabilities: ["NET_RAW", "NET_ADMIN"]
+      memory: "512m"
+      cpus: "1"
     args:
       - name: "target"
         description: "Target IP/Domain"
