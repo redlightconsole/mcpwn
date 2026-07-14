@@ -13,7 +13,7 @@ import (
 
 // Execute runs a command and returns its combined output (stdout + stderr).
 // It uses a timeout to prevent tools from hanging indefinitely.
-// If an image is provided, it runs the command inside a Docker container.
+// If an image is provided, it runs the command inside a container (podman preferred, docker fallback).
 //
 // Note: exec.CommandContext does **not** invoke a shell, so arguments are passed
 // directly to the process without shell interpretation.
@@ -29,6 +29,7 @@ func Execute(ctx context.Context, tool *config.Tool, args []string) (string, err
 
 	var cmd *exec.Cmd
 	if tool.Docker != nil && tool.Docker.Image != "" {
+		runtime := detectRuntime()
 		dockerArgs := []string{
 			"run", "--rm", "-i",
 			"--security-opt", "no-new-privileges",
@@ -74,8 +75,8 @@ func Execute(ctx context.Context, tool *config.Tool, args []string) (string, err
 		}
 		dockerArgs = append(dockerArgs, tool.Docker.Image, tool.Command)
 		dockerArgs = append(dockerArgs, args...)
-		cmd = exec.CommandContext(ctx, "docker", dockerArgs...)
-		slog.DebugContext(ctx, "Running inside docker", "docker_args", dockerArgs)
+		cmd = exec.CommandContext(ctx, runtime, dockerArgs...)
+		slog.DebugContext(ctx, "Running inside container", "runtime", runtime, "container_args", dockerArgs)
 	} else {
 		cmd = exec.CommandContext(ctx, tool.Command, args...)
 	}
@@ -95,4 +96,14 @@ func Execute(ctx context.Context, tool *config.Tool, args []string) (string, err
 
 	slog.DebugContext(ctx, "Command execution completed successfully", "command", tool.Command)
 	return result, nil
+}
+
+// detectRuntime checks for available container runtimes, preferring podman over docker.
+func detectRuntime() string {
+	for _, runtime := range []string{"podman", "docker"} {
+		if _, err := exec.LookPath(runtime); err == nil {
+			return runtime
+		}
+	}
+	return "docker"
 }

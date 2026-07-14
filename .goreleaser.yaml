@@ -28,7 +28,7 @@ nfpms:
     formats:
       - deb
     dependencies:
-      - docker.io
+      - podman | docker.io
     contents:
       - src: mcpwn.yaml
         dst: /etc/mcpwn/mcpwn.yaml

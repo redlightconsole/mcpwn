@@ -22,7 +22,7 @@ type Tool struct {
 	Name        string        `yaml:"name"`        // Tool name (used in MCP)
 	Description string        `yaml:"description"` // Tool description
 	Command     string        `yaml:"command"`     // Binary command to execute
-	Docker      *DockerConfig `yaml:"docker"`      // Docker configuration (optional)
+	Docker      *DockerConfig `yaml:"docker"`      // Container configuration (optional, uses podman or docker)
 	FixedArgs   []string      `yaml:"fixed_args"`  // Arguments passed to the tool
 	Args        []Arg         `yaml:"args"`        // Dynamic arguments mapped from MCP
 }
