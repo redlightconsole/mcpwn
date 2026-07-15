@@ -51,7 +51,7 @@ func Execute(ctx context.Context, tool *config.Tool, args []string) (Result, err
 	if tool.Docker != nil {
 		image = tool.Docker.Image
 	}
-	slog.DebugContext(ctx, "Preparing command execution", "command", tool.Command, "image", image, "args", args)
+	slog.DebugContext(ctx, "Preparing command execution", "command", tool.Command, "image", image, "args_count", len(args))
 
 	var cmd *exec.Cmd
 	if tool.Docker != nil && tool.Docker.Image != "" {
@@ -105,7 +105,7 @@ func Execute(ctx context.Context, tool *config.Tool, args []string) (Result, err
 		dockerArgs = append(dockerArgs, tool.Docker.Image, tool.Command)
 		dockerArgs = append(dockerArgs, args...)
 		cmd = exec.CommandContext(ctx, runtime, dockerArgs...)
-		slog.DebugContext(ctx, "Running inside container", "runtime", runtime, "container_args", dockerArgs)
+		slog.DebugContext(ctx, "Running inside container", "runtime", runtime, "image", tool.Docker.Image)
 	} else {
 		cmd = exec.CommandContext(ctx, tool.Command, args...)
 	}
