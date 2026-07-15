@@ -1,9 +1,12 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -55,9 +58,96 @@ func Load(path string) (*Config, error) {
 	}
 
 	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse configuration: %w", err)
 	}
 
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+
 	return &cfg, nil
+}
+
+func (cfg *Config) Validate() error {
+	if cfg == nil {
+		return fmt.Errorf("config is nil")
+	}
+	if len(cfg.Tools) == 0 {
+		return fmt.Errorf("at least one tool is required")
+	}
+
+	toolNames := make(map[string]struct{}, len(cfg.Tools))
+	for i, tool := range cfg.Tools {
+		name := strings.TrimSpace(tool.Name)
+		if name == "" {
+			return fmt.Errorf("tool at index %d has empty name", i)
+		}
+		if _, exists := toolNames[name]; exists {
+			return fmt.Errorf("duplicate tool name: %s", name)
+		}
+		toolNames[name] = struct{}{}
+
+		if strings.TrimSpace(tool.Command) == "" {
+			return fmt.Errorf("tool %q has empty command", name)
+		}
+		if tool.Docker != nil && strings.TrimSpace(tool.Docker.Image) == "" {
+			return fmt.Errorf("tool %q has docker config without image", name)
+		}
+		if tool.Timeout != "" {
+			timeout, err := time.ParseDuration(tool.Timeout)
+			if err != nil {
+				return fmt.Errorf("tool %q has invalid timeout: %w", name, err)
+			}
+			if timeout <= 0 {
+				return fmt.Errorf("tool %q timeout must be greater than zero", name)
+			}
+		}
+		if tool.MaxOutputBytes < 0 {
+			return fmt.Errorf("tool %q max_output_bytes must be zero or greater", name)
+		}
+		for _, code := range tool.SuccessExitCodes {
+			if code < 0 || code > 255 {
+				return fmt.Errorf("tool %q has invalid success exit code: %d", name, code)
+			}
+		}
+		if err := validateArgs(name, tool.Args); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateArgs(toolName string, args []Arg) error {
+	argNames := make(map[string]struct{}, len(args))
+	for i, arg := range args {
+		name := strings.TrimSpace(arg.Name)
+		if name == "" {
+			return fmt.Errorf("tool %q arg at index %d has empty name", toolName, i)
+		}
+		if _, exists := argNames[name]; exists {
+			return fmt.Errorf("tool %q has duplicate arg name: %s", toolName, name)
+		}
+		argNames[name] = struct{}{}
+
+		switch arg.Type {
+		case "", "string", "boolean":
+		default:
+			return fmt.Errorf("tool %q arg %q has invalid type: %s", toolName, name, arg.Type)
+		}
+		if arg.Type == "boolean" && strings.TrimSpace(arg.Flag) == "" {
+			return fmt.Errorf("tool %q boolean arg %q requires a flag", toolName, name)
+		}
+		if arg.Type == "boolean" && arg.Positional {
+			return fmt.Errorf("tool %q boolean arg %q cannot be positional", toolName, name)
+		}
+		if arg.Positional && strings.TrimSpace(arg.Flag) != "" {
+			return fmt.Errorf("tool %q positional arg %q cannot define a flag", toolName, name)
+		}
+	}
+
+	return nil
 }
