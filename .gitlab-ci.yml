@@ -1,5 +1,16 @@
 stages:
+  - validate
   - release
+
+validate:
+  stage: validate
+  image: golang:1.24
+  variables:
+    GOFLAGS: -mod=vendor
+  script:
+    - go test ./...
+    - go vet ./...
+    - go build -o /tmp/mcpwn ./cmd/mcpwn
 
 release:
   stage: release
