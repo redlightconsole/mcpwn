@@ -93,6 +93,25 @@ func TestExecuteReturnsMissingRuntimeError(t *testing.T) {
 	}
 }
 
+func TestExecuteTruncatesOutput(t *testing.T) {
+	withHelperProcess(t)
+
+	result, err := Execute(context.Background(), &config.Tool{Command: os.Args[0]}, []string{
+		"-test.run=TestHelperProcess",
+		"--",
+		"long-output",
+	})
+	if err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if !result.OutputTruncated {
+		t.Fatal("Result.OutputTruncated = false, want true")
+	}
+	if !strings.Contains(result.Output, "[WARN] Command output exceeded") {
+		t.Fatalf("Result.Output does not contain truncation warning")
+	}
+}
+
 func TestHelperProcess(t *testing.T) {
 	if os.Getenv("MCPWN_HELPER_PROCESS") != "1" {
 		return
@@ -115,6 +134,9 @@ func TestHelperProcess(t *testing.T) {
 		os.Exit(7)
 	case "sleep":
 		time.Sleep(time.Second)
+		os.Exit(0)
+	case "long-output":
+		_, _ = os.Stdout.WriteString(strings.Repeat("a", int(defaultMaxOutputBytes)+1))
 		os.Exit(0)
 	default:
 		os.Exit(2)

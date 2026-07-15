@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -11,12 +12,16 @@ import (
 	"mcpwn/internal/config"
 )
 
-const defaultTimeout = 10 * time.Minute
+const (
+	defaultTimeout        = 10 * time.Minute
+	defaultMaxOutputBytes = 1024 * 1024
+)
 
 type Result struct {
-	Output   string
-	ExitCode int
-	TimedOut bool
+	Output          string
+	ExitCode        int
+	TimedOut        bool
+	OutputTruncated bool
 }
 
 type ExitError struct {
@@ -110,10 +115,19 @@ func Execute(ctx context.Context, tool *config.Tool, args []string) (Result, err
 		cmd = exec.CommandContext(ctx, tool.Command, args...)
 	}
 
-	// Combine stdout and stderr to give the LLM full visibility on errors
-	output, err := cmd.CombinedOutput()
+	output := newLimitedBuffer(defaultMaxOutputBytes)
+	cmd.Stdout = output
+	cmd.Stderr = output
+	err := cmd.Run()
 
-	result := Result{Output: string(output)}
+	result := Result{
+		Output:          output.String(),
+		OutputTruncated: output.Truncated(),
+	}
+	if result.OutputTruncated {
+		result.Output += fmt.Sprintf("\n[WARN] Command output exceeded %d bytes and was truncated.", output.Limit())
+	}
+
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			slog.WarnContext(ctx, "Command execution timed out", "command", tool.Command)
@@ -144,4 +158,48 @@ func detectRuntime() (string, error) {
 		}
 	}
 	return "", errors.New("container runtime not found: install podman or docker")
+}
+
+type limitedBuffer struct {
+	buf       bytes.Buffer
+	limit     int64
+	truncated bool
+}
+
+func newLimitedBuffer(limit int64) *limitedBuffer {
+	return &limitedBuffer{limit: limit}
+}
+
+func (b *limitedBuffer) Write(p []byte) (int, error) {
+	originalLen := len(p)
+	if b.limit <= 0 {
+		_, err := b.buf.Write(p)
+		return originalLen, err
+	}
+
+	remaining := b.limit - int64(b.buf.Len())
+	if remaining <= 0 {
+		b.truncated = true
+		return originalLen, nil
+	}
+
+	if int64(len(p)) > remaining {
+		p = p[:remaining]
+		b.truncated = true
+	}
+
+	_, err := b.buf.Write(p)
+	return originalLen, err
+}
+
+func (b *limitedBuffer) String() string {
+	return b.buf.String()
+}
+
+func (b *limitedBuffer) Truncated() bool {
+	return b.truncated
+}
+
+func (b *limitedBuffer) Limit() int64 {
+	return b.limit
 }
