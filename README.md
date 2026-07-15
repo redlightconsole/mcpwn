@@ -13,6 +13,8 @@
   - [Automated Builds & Packaging](#automated-builds--packaging)
 - [Configuration](#configuration)
   - [Example mcpwn.yaml](#example-mcpwnyaml)
+  - [Execution limits](#execution-limits)
+  - [Persisted outputs](#persisted-outputs)
 - [Usage](#usage)
   - [Run Manually](#run-manually)
   - [Integration with Claude and Gemini (WIP)](#integration-with-claude-and-gemini-wip)
@@ -25,6 +27,7 @@
 - **Dynamic tool registration**: define tools (like `nmap`, `gobuster`, etc...) via a simple `mcpwn.yaml` file.
 - **Flexible arguments**: supports `extra_args` to pass any valid CLI flag to tools, providing full flexibility.
 - **Docker integration**: runs tools in isolated containers for security and easy dependency management.
+- **Bounded output handling**: returns safe previews while keeping full command output available through retrieval tools.
 - **Cross-platform**: compiles for Linux, macOS, and Windows. Automated releases are built via Goreleaser, and `.deb` packaging is supported for Debian-based systems.
 
 ## Project Structure
@@ -41,6 +44,9 @@
 │   ├── executor              
 │   │   ├── run.go
 │   │   └── run_test.go
+│   ├── output                // Persisted command output storage and retrieval
+│   │   ├── store.go
+│   │   └── store_test.go
 │   └── server                // MCP protocol implementation and tool routing
 │       ├── server.go
 │       └── server_test.go
@@ -52,18 +58,18 @@
 
 ### Prerequisites and Info
 
-- [Go 1.25](https://go.dev/dl/) or later.
+- [Go 1.24](https://go.dev/dl/) or later.
 - Docker
 
 You can use `mcpwn` with your locally installed tools or with Docker (recommended).
 
 If you decide not to use Docker, you can still use it but the security tools you want to use (e.g., `nmap`) must be installed and in your system `PATH`.
 
-By default, tools run inside **Docker containers**, which provides a strong layer of isolation.
+By default, tools run inside **Docker containers**, which provides an additional isolation layer.
 
 ### Security Architecture
 
-mcpwn is designed to prevent unauthorized access to your host machine:
+mcpwn is designed to reduce host exposure when executing local tools:
 
 1.  **Direct execution**: The server uses Go's `exec.Command`, which executes binaries directly without involving a system shell (like `/bin/sh` or `cmd.exe`). This means that special characters are passed as literal arguments rather than being interpreted as command separators.
 2.  **Docker isolation**: Tools run in ephemeral containers with defaults:
@@ -117,6 +123,9 @@ tools:
       capabilities: ["NET_RAW", "NET_ADMIN"]
       memory: "512m"
       cpus: "1"
+    timeout: "10m"
+    max_output_bytes: 1048576
+    success_exit_codes: [0]
     args:
       - name: "target"
         description: "Target IP/Domain"
@@ -130,6 +139,30 @@ tools:
         description: "Any additional nmap arguments"
         flag: ""
 ```
+
+### Execution limits
+
+Each tool can define optional execution limits:
+
+| Field | Default | Description |
+|---|---:|---|
+| `timeout` | `10m` | Maximum runtime as a Go duration string, such as `30s`, `5m`, or `1h`. |
+| `max_output_bytes` | `1048576` | Maximum bytes returned in the MCP response preview. |
+| `success_exit_codes` | `[0]` | Exit codes treated as successful for that tool. |
+
+`mcpwn` validates the configuration at startup. Unknown YAML fields, duplicate tool names, empty commands, invalid argument types, invalid timeouts, and invalid exit codes fail fast.
+
+### Persisted outputs
+
+Tool output is written to local storage while the MCP response stays bounded by `max_output_bytes`. If the preview is truncated, the response includes an `output_id` that can be inspected with built-in MCP tools:
+
+| Tool | Purpose |
+|---|---|
+| `mcpwn_read_output` | Read a byte range using `output_id`, `offset`, and `limit`. |
+| `mcpwn_tail_output` | Read the last lines using `output_id` and `lines`. |
+| `mcpwn_search_output` | Search a literal string using `output_id`, `query`, and `max_matches`. |
+
+By default, outputs are stored under the user's cache directory in `mcpwn/outputs`. Set `MCPWN_OUTPUT_DIR` to choose a different local directory.
 
 ## Usage
 
