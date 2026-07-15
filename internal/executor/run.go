@@ -11,14 +11,40 @@ import (
 	"mcpwn/internal/config"
 )
 
+const defaultTimeout = 10 * time.Minute
+
+type Result struct {
+	Output   string
+	ExitCode int
+	TimedOut bool
+}
+
+type ExitError struct {
+	Command  string
+	ExitCode int
+}
+
+func (e *ExitError) Error() string {
+	return fmt.Sprintf("%s exited with code %d", e.Command, e.ExitCode)
+}
+
+type TimeoutError struct {
+	Command string
+	Timeout time.Duration
+}
+
+func (e *TimeoutError) Error() string {
+	return fmt.Sprintf("%s exceeded execution time limit %s", e.Command, e.Timeout)
+}
+
 // Execute runs a command and returns its combined output (stdout + stderr).
 // It uses a timeout to prevent tools from hanging indefinitely.
 // If an image is provided, it runs the command inside a container (podman preferred, docker fallback).
 //
 // Note: exec.CommandContext does **not** invoke a shell, so arguments are passed
 // directly to the process without shell interpretation.
-func Execute(ctx context.Context, tool *config.Tool, args []string) (string, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+func Execute(ctx context.Context, tool *config.Tool, args []string) (Result, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
 	image := ""
@@ -29,7 +55,10 @@ func Execute(ctx context.Context, tool *config.Tool, args []string) (string, err
 
 	var cmd *exec.Cmd
 	if tool.Docker != nil && tool.Docker.Image != "" {
-		runtime := detectRuntime()
+		runtime, err := detectRuntime()
+		if err != nil {
+			return Result{}, err
+		}
 		dockerArgs := []string{
 			"run", "--rm", "-i",
 			"--security-opt", "no-new-privileges",
@@ -84,14 +113,23 @@ func Execute(ctx context.Context, tool *config.Tool, args []string) (string, err
 	// Combine stdout and stderr to give the LLM full visibility on errors
 	output, err := cmd.CombinedOutput()
 
-	result := string(output)
+	result := Result{Output: string(output)}
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			slog.WarnContext(ctx, "Command execution timed out", "command", tool.Command)
-			return result + "\n[ERROR] Command exceeded execution time limit.", nil
+			result.TimedOut = true
+			return result, &TimeoutError{Command: tool.Command, Timeout: defaultTimeout}
 		}
+
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			result.ExitCode = exitErr.ExitCode()
+			slog.ErrorContext(ctx, "Command execution failed", "command", tool.Command, "exit_code", result.ExitCode)
+			return result, &ExitError{Command: tool.Command, ExitCode: result.ExitCode}
+		}
+
 		slog.ErrorContext(ctx, "Command execution failed", "command", tool.Command, "error", err)
-		return fmt.Sprintf("Exit Code Error: %v\nOutput:\n%s", err, result), nil
+		return result, fmt.Errorf("failed to execute %s: %w", tool.Command, err)
 	}
 
 	slog.DebugContext(ctx, "Command execution completed successfully", "command", tool.Command)
@@ -99,11 +137,11 @@ func Execute(ctx context.Context, tool *config.Tool, args []string) (string, err
 }
 
 // detectRuntime checks for available container runtimes, preferring podman over docker.
-func detectRuntime() string {
+func detectRuntime() (string, error) {
 	for _, runtime := range []string{"podman", "docker"} {
 		if _, err := exec.LookPath(runtime); err == nil {
-			return runtime
+			return runtime, nil
 		}
 	}
-	return "docker"
+	return "", errors.New("container runtime not found: install podman or docker")
 }
