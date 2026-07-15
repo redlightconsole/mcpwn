@@ -1,3 +1,19 @@
+mcpwn (1.3.0-0parrot1) echo; urgency=medium
+
+  * test: cover core behavior
+  * fix: propagate execution failures
+  * fix: avoid logging tool arguments
+  * fix: cap command output
+  * feat: make execution limits configurable per tool
+  * feat: enforce strict tool configuration validation
+  * feat: persist full command output locally
+  * feat: add persisted output inspection helpers
+  * feat: expose persisted output inspection tools
+  * ci: add validation checks for Go builds
+  * docs: document execution limits and output retrieval
+
+ -- Dario "danterolle" Camonita <danterolle@parrotsec.org>  Wed, 15 Jul 2026 13:41:36 +0200
+
 mcpwn (1.2.0-0parrot1) echo; urgency=medium
 
   * test: update `run.go` tests
