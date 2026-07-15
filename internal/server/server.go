@@ -96,18 +96,28 @@ func (ms *MCPServer) handleCallTool(ctx context.Context, req *mcp.CallToolReques
 		image = selectedTool.Docker.Image
 	}
 	ms.logger.InfoContext(ctx, "Executing tool", "command", selectedTool.Command, "args", cliArgs, "image", image)
-	output, err := executor.Execute(ctx, selectedTool, cliArgs)
+	result, err := executor.Execute(ctx, selectedTool, cliArgs)
 	if err != nil {
 		ms.logger.ErrorContext(ctx, "Execution failure", "tool", selectedTool.Name, "error", err)
+		message := executionErrorMessage(err, result.Output)
 		return &mcp.CallToolResult{
-			Content: []mcp.Content{&mcp.TextContent{Text: "System Error: " + err.Error()}},
+			Content: []mcp.Content{&mcp.TextContent{Text: message}},
 			IsError: true,
 		}, nil
 	}
 
 	return &mcp.CallToolResult{
-		Content: []mcp.Content{&mcp.TextContent{Text: output}},
+		Content: []mcp.Content{&mcp.TextContent{Text: result.Output}},
 	}, nil
+}
+
+func executionErrorMessage(err error, output string) string {
+	output = strings.TrimRight(output, "\n")
+	if output == "" {
+		return "Execution Error: " + err.Error()
+	}
+
+	return fmt.Sprintf("Execution Error: %v\nOutput:\n%s", err, output)
 }
 
 func generateSchema(t config.Tool) json.RawMessage {

@@ -2,8 +2,11 @@ package executor
 
 import (
 	"context"
+	"errors"
 	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"mcpwn/internal/config"
 )
@@ -11,7 +14,7 @@ import (
 func TestExecuteRunsCommand(t *testing.T) {
 	withHelperProcess(t)
 
-	output, err := Execute(context.Background(), &config.Tool{Command: os.Args[0]}, []string{
+	result, err := Execute(context.Background(), &config.Tool{Command: os.Args[0]}, []string{
 		"-test.run=TestHelperProcess",
 		"--",
 		"success",
@@ -19,8 +22,74 @@ func TestExecuteRunsCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Execute() error = %v", err)
 	}
-	if output != "ok\n" {
-		t.Fatalf("Execute() output = %q, want %q", output, "ok\n")
+	if result.Output != "ok\n" {
+		t.Fatalf("Execute() output = %q, want %q", result.Output, "ok\n")
+	}
+}
+
+func TestExecuteReturnsExitError(t *testing.T) {
+	withHelperProcess(t)
+
+	result, err := Execute(context.Background(), &config.Tool{Command: os.Args[0]}, []string{
+		"-test.run=TestHelperProcess",
+		"--",
+		"fail",
+	})
+	if err == nil {
+		t.Fatal("Execute() error = nil, want error")
+	}
+
+	var exitErr *ExitError
+	if !errors.As(err, &exitErr) {
+		t.Fatalf("Execute() error = %T, want *ExitError", err)
+	}
+	if exitErr.ExitCode != 7 {
+		t.Fatalf("ExitError.ExitCode = %d, want 7", exitErr.ExitCode)
+	}
+	if result.ExitCode != 7 {
+		t.Fatalf("Result.ExitCode = %d, want 7", result.ExitCode)
+	}
+	if result.Output != "failed\n" {
+		t.Fatalf("Result.Output = %q, want %q", result.Output, "failed\n")
+	}
+}
+
+func TestExecuteReturnsTimeoutError(t *testing.T) {
+	withHelperProcess(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+
+	result, err := Execute(ctx, &config.Tool{Command: os.Args[0]}, []string{
+		"-test.run=TestHelperProcess",
+		"--",
+		"sleep",
+	})
+	if err == nil {
+		t.Fatal("Execute() error = nil, want error")
+	}
+
+	var timeoutErr *TimeoutError
+	if !errors.As(err, &timeoutErr) {
+		t.Fatalf("Execute() error = %T, want *TimeoutError", err)
+	}
+	if !result.TimedOut {
+		t.Fatal("Result.TimedOut = false, want true")
+	}
+}
+
+func TestExecuteReturnsMissingRuntimeError(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+
+	_, err := Execute(context.Background(), &config.Tool{
+		Command: "echo",
+		Docker:  &config.DockerConfig{Image: "alpine"},
+	}, []string{"ok"})
+	if err == nil {
+		t.Fatal("Execute() error = nil, want error")
+	}
+	if !strings.Contains(err.Error(), "container runtime not found") {
+		t.Fatalf("Execute() error = %q, want container runtime error", err)
 	}
 }
 
@@ -40,6 +109,12 @@ func TestHelperProcess(t *testing.T) {
 	switch args[1] {
 	case "success":
 		_, _ = os.Stdout.WriteString("ok\n")
+		os.Exit(0)
+	case "fail":
+		_, _ = os.Stderr.WriteString("failed\n")
+		os.Exit(7)
+	case "sleep":
+		time.Sleep(time.Second)
 		os.Exit(0)
 	default:
 		os.Exit(2)
