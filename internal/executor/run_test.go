@@ -57,10 +57,10 @@ func TestExecuteReturnsExitError(t *testing.T) {
 func TestExecuteReturnsTimeoutError(t *testing.T) {
 	withHelperProcess(t)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-	defer cancel()
-
-	result, err := Execute(ctx, &config.Tool{Command: os.Args[0]}, []string{
+	result, err := Execute(context.Background(), &config.Tool{
+		Command: os.Args[0],
+		Timeout: "10ms",
+	}, []string{
 		"-test.run=TestHelperProcess",
 		"--",
 		"sleep",
@@ -75,6 +75,25 @@ func TestExecuteReturnsTimeoutError(t *testing.T) {
 	}
 	if !result.TimedOut {
 		t.Fatal("Result.TimedOut = false, want true")
+	}
+}
+
+func TestExecuteAllowsConfiguredSuccessExitCode(t *testing.T) {
+	withHelperProcess(t)
+
+	result, err := Execute(context.Background(), &config.Tool{
+		Command:          os.Args[0],
+		SuccessExitCodes: []int{7},
+	}, []string{
+		"-test.run=TestHelperProcess",
+		"--",
+		"fail",
+	})
+	if err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if result.ExitCode != 7 {
+		t.Fatalf("Result.ExitCode = %d, want 7", result.ExitCode)
 	}
 }
 
@@ -96,7 +115,10 @@ func TestExecuteReturnsMissingRuntimeError(t *testing.T) {
 func TestExecuteTruncatesOutput(t *testing.T) {
 	withHelperProcess(t)
 
-	result, err := Execute(context.Background(), &config.Tool{Command: os.Args[0]}, []string{
+	result, err := Execute(context.Background(), &config.Tool{
+		Command:        os.Args[0],
+		MaxOutputBytes: 4,
+	}, []string{
 		"-test.run=TestHelperProcess",
 		"--",
 		"long-output",
@@ -107,8 +129,8 @@ func TestExecuteTruncatesOutput(t *testing.T) {
 	if !result.OutputTruncated {
 		t.Fatal("Result.OutputTruncated = false, want true")
 	}
-	if !strings.Contains(result.Output, "[WARN] Command output exceeded") {
-		t.Fatalf("Result.Output does not contain truncation warning")
+	if !strings.HasPrefix(result.Output, "aaaa\n[WARN]") {
+		t.Fatalf("Result.Output = %q, want truncated output with warning", result.Output)
 	}
 }
 
@@ -136,7 +158,7 @@ func TestHelperProcess(t *testing.T) {
 		time.Sleep(time.Second)
 		os.Exit(0)
 	case "long-output":
-		_, _ = os.Stdout.WriteString(strings.Repeat("a", int(defaultMaxOutputBytes)+1))
+		_, _ = os.Stdout.WriteString("aaaaa")
 		os.Exit(0)
 	default:
 		os.Exit(2)

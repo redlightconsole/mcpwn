@@ -19,12 +19,15 @@ type DockerConfig struct {
 }
 
 type Tool struct {
-	Name        string        `yaml:"name"`        // Tool name (used in MCP)
-	Description string        `yaml:"description"` // Tool description
-	Command     string        `yaml:"command"`     // Binary command to execute
-	Docker      *DockerConfig `yaml:"docker"`      // Container configuration (optional, uses podman or docker)
-	FixedArgs   []string      `yaml:"fixed_args"`  // Arguments passed to the tool
-	Args        []Arg         `yaml:"args"`        // Dynamic arguments mapped from MCP
+	Name             string        `yaml:"name"`               // Tool name (used in MCP)
+	Description      string        `yaml:"description"`        // Tool description
+	Command          string        `yaml:"command"`            // Binary command to execute
+	Docker           *DockerConfig `yaml:"docker"`             // Container configuration (optional, uses podman or docker)
+	FixedArgs        []string      `yaml:"fixed_args"`         // Arguments passed to the tool
+	Args             []Arg         `yaml:"args"`               // Dynamic arguments mapped from MCP
+	SuccessExitCodes []int         `yaml:"success_exit_codes"` // Exit codes treated as successful
+	Timeout          string        `yaml:"timeout"`            // Execution timeout as a Go duration
+	MaxOutputBytes   int64         `yaml:"max_output_bytes"`   // Maximum combined stdout/stderr bytes kept in memory
 }
 
 type Arg struct {
