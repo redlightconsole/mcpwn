@@ -95,7 +95,7 @@ func (ms *MCPServer) handleCallTool(ctx context.Context, req *mcp.CallToolReques
 	if selectedTool.Docker != nil {
 		image = selectedTool.Docker.Image
 	}
-	ms.logger.InfoContext(ctx, "Executing tool", "command", selectedTool.Command, "args", cliArgs, "image", image)
+	ms.logger.InfoContext(ctx, "Executing tool", "command", selectedTool.Command, "args_count", len(cliArgs), "image", image)
 	result, err := executor.Execute(ctx, selectedTool, cliArgs)
 	if err != nil {
 		ms.logger.ErrorContext(ctx, "Execution failure", "tool", selectedTool.Name, "error", err)
