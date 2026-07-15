@@ -49,7 +49,12 @@ func (e *TimeoutError) Error() string {
 // Note: exec.CommandContext does **not** invoke a shell, so arguments are passed
 // directly to the process without shell interpretation.
 func Execute(ctx context.Context, tool *config.Tool, args []string) (Result, error) {
-	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	timeout, err := timeoutFor(tool)
+	if err != nil {
+		return Result{}, err
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	image := ""
@@ -115,10 +120,10 @@ func Execute(ctx context.Context, tool *config.Tool, args []string) (Result, err
 		cmd = exec.CommandContext(ctx, tool.Command, args...)
 	}
 
-	output := newLimitedBuffer(defaultMaxOutputBytes)
+	output := newLimitedBuffer(maxOutputBytesFor(tool))
 	cmd.Stdout = output
 	cmd.Stderr = output
-	err := cmd.Run()
+	err = cmd.Run()
 
 	result := Result{
 		Output:          output.String(),
@@ -132,18 +137,25 @@ func Execute(ctx context.Context, tool *config.Tool, args []string) (Result, err
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			slog.WarnContext(ctx, "Command execution timed out", "command", tool.Command)
 			result.TimedOut = true
-			return result, &TimeoutError{Command: tool.Command, Timeout: defaultTimeout}
+			return result, &TimeoutError{Command: tool.Command, Timeout: timeout}
 		}
 
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
 			result.ExitCode = exitErr.ExitCode()
+			if isSuccessExitCode(tool, result.ExitCode) {
+				return result, nil
+			}
 			slog.ErrorContext(ctx, "Command execution failed", "command", tool.Command, "exit_code", result.ExitCode)
 			return result, &ExitError{Command: tool.Command, ExitCode: result.ExitCode}
 		}
 
 		slog.ErrorContext(ctx, "Command execution failed", "command", tool.Command, "error", err)
 		return result, fmt.Errorf("failed to execute %s: %w", tool.Command, err)
+	}
+
+	if !isSuccessExitCode(tool, 0) {
+		return result, &ExitError{Command: tool.Command, ExitCode: 0}
 	}
 
 	slog.DebugContext(ctx, "Command execution completed successfully", "command", tool.Command)
@@ -158,6 +170,41 @@ func detectRuntime() (string, error) {
 		}
 	}
 	return "", errors.New("container runtime not found: install podman or docker")
+}
+
+func timeoutFor(tool *config.Tool) (time.Duration, error) {
+	if tool.Timeout == "" {
+		return defaultTimeout, nil
+	}
+
+	timeout, err := time.ParseDuration(tool.Timeout)
+	if err != nil {
+		return 0, fmt.Errorf("invalid timeout for %s: %w", tool.Name, err)
+	}
+	if timeout <= 0 {
+		return 0, fmt.Errorf("invalid timeout for %s: must be greater than zero", tool.Name)
+	}
+	return timeout, nil
+}
+
+func maxOutputBytesFor(tool *config.Tool) int64 {
+	if tool.MaxOutputBytes > 0 {
+		return tool.MaxOutputBytes
+	}
+	return defaultMaxOutputBytes
+}
+
+func isSuccessExitCode(tool *config.Tool, code int) bool {
+	if len(tool.SuccessExitCodes) == 0 {
+		return code == 0
+	}
+
+	for _, successCode := range tool.SuccessExitCodes {
+		if code == successCode {
+			return true
+		}
+	}
+	return false
 }
 
 type limitedBuffer struct {
