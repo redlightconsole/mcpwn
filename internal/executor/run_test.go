@@ -3,6 +3,7 @@ package executor
 import (
 	"context"
 	"errors"
+	"mcpwn/internal/output"
 	"os"
 	"strings"
 	"testing"
@@ -24,6 +25,9 @@ func TestExecuteRunsCommand(t *testing.T) {
 	}
 	if result.Output != "ok\n" {
 		t.Fatalf("Execute() output = %q, want %q", result.Output, "ok\n")
+	}
+	if result.OutputID == "" {
+		t.Fatal("Result.OutputID is empty")
 	}
 }
 
@@ -113,7 +117,7 @@ func TestExecuteReturnsMissingRuntimeError(t *testing.T) {
 }
 
 func TestExecuteTruncatesOutput(t *testing.T) {
-	withHelperProcess(t)
+	outputDir := withHelperProcess(t)
 
 	result, err := Execute(context.Background(), &config.Tool{
 		Command:        os.Args[0],
@@ -131,6 +135,21 @@ func TestExecuteTruncatesOutput(t *testing.T) {
 	}
 	if !strings.HasPrefix(result.Output, "aaaa\n[WARN]") {
 		t.Fatalf("Result.Output = %q, want truncated output with warning", result.Output)
+	}
+	if !strings.Contains(result.Output, "output_id: "+result.OutputID) {
+		t.Fatalf("Result.Output = %q, want output_id metadata", result.Output)
+	}
+
+	store, err := output.NewStore(outputDir)
+	if err != nil {
+		t.Fatalf("NewStore() error = %v", err)
+	}
+	fullOutput, err := store.ReadAll(result.OutputID)
+	if err != nil {
+		t.Fatalf("ReadAll() error = %v", err)
+	}
+	if string(fullOutput) != "aaaaa" {
+		t.Fatalf("full output = %q, want %q", fullOutput, "aaaaa")
 	}
 }
 
@@ -165,8 +184,11 @@ func TestHelperProcess(t *testing.T) {
 	}
 }
 
-func withHelperProcess(t *testing.T) {
+func withHelperProcess(t *testing.T) string {
 	t.Helper()
 
+	outputDir := t.TempDir()
 	t.Setenv("MCPWN_HELPER_PROCESS", "1")
+	t.Setenv("MCPWN_OUTPUT_DIR", outputDir)
+	return outputDir
 }

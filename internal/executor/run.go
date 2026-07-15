@@ -5,7 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
+	"mcpwn/internal/output"
 	"os/exec"
 	"time"
 
@@ -19,6 +21,7 @@ const (
 
 type Result struct {
 	Output          string
+	OutputID        string
 	ExitCode        int
 	TimedOut        bool
 	OutputTruncated bool
@@ -120,17 +123,33 @@ func Execute(ctx context.Context, tool *config.Tool, args []string) (Result, err
 		cmd = exec.CommandContext(ctx, tool.Command, args...)
 	}
 
-	output := newLimitedBuffer(maxOutputBytesFor(tool))
-	cmd.Stdout = output
-	cmd.Stderr = output
+	store, err := output.DefaultStore()
+	if err != nil {
+		return Result{}, err
+	}
+	entry, fullOutput, err := store.Create()
+	if err != nil {
+		return Result{}, err
+	}
+
+	preview := newLimitedBuffer(maxOutputBytesFor(tool))
+	combinedOutput := io.MultiWriter(preview, fullOutput)
+	cmd.Stdout = combinedOutput
+	cmd.Stderr = combinedOutput
 	err = cmd.Run()
+	closeErr := fullOutput.Close()
 
 	result := Result{
-		Output:          output.String(),
-		OutputTruncated: output.Truncated(),
+		Output:          preview.String(),
+		OutputID:        entry.ID,
+		OutputTruncated: preview.Truncated(),
 	}
 	if result.OutputTruncated {
-		result.Output += fmt.Sprintf("\n[WARN] Command output exceeded %d bytes and was truncated.", output.Limit())
+		result.Output += fmt.Sprintf("\n[WARN] Command output exceeded %d bytes and was truncated.", preview.Limit())
+		result.Output += fmt.Sprintf("\n[INFO] Full output saved with output_id: %s", result.OutputID)
+	}
+	if closeErr != nil && err == nil {
+		return result, fmt.Errorf("failed to persist command output: %w", closeErr)
 	}
 
 	if err != nil {
