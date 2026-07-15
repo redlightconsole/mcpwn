@@ -134,7 +134,7 @@ func validateArgs(toolName string, args []Arg) error {
 		argNames[name] = struct{}{}
 
 		switch arg.Type {
-		case "", "string", "boolean":
+		case "", "string", "boolean", "array":
 		default:
 			return fmt.Errorf("tool %q arg %q has invalid type: %s", toolName, name, arg.Type)
 		}

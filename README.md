@@ -138,7 +138,10 @@ tools:
       - name: "extra_args"
         description: "Any additional nmap arguments"
         flag: ""
+        type: "array"
 ```
+
+For raw passthrough arguments such as `extra_args`, prefer an array of strings so values containing spaces are preserved as single CLI arguments.
 
 ### Execution limits
 

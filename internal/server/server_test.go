@@ -40,6 +40,64 @@ func TestBuildArgs(t *testing.T) {
 	}
 }
 
+func TestBuildArgsArrayRawArgsPreservesSpaces(t *testing.T) {
+	tool := &config.Tool{
+		Args: []config.Arg{
+			{Name: "extra_args", Type: "array", Flag: ""},
+		},
+	}
+
+	args, err := buildArgs(tool, map[string]interface{}{
+		"extra_args": []interface{}{"--header", "Authorization: Bearer test token", "--data", "name=Jane Doe"},
+	})
+	if err != nil {
+		t.Fatalf("buildArgs() error = %v", err)
+	}
+
+	want := []string{"--header", "Authorization: Bearer test token", "--data", "name=Jane Doe"}
+	if !reflect.DeepEqual(args, want) {
+		t.Fatalf("buildArgs() = %#v, want %#v", args, want)
+	}
+}
+
+func TestBuildArgsArrayRawArgsAcceptsLegacyString(t *testing.T) {
+	tool := &config.Tool{
+		Args: []config.Arg{
+			{Name: "extra_args", Type: "array", Flag: ""},
+		},
+	}
+
+	args, err := buildArgs(tool, map[string]interface{}{
+		"extra_args": "--reason --top-ports 10",
+	})
+	if err != nil {
+		t.Fatalf("buildArgs() error = %v", err)
+	}
+
+	want := []string{"--reason", "--top-ports", "10"}
+	if !reflect.DeepEqual(args, want) {
+		t.Fatalf("buildArgs() = %#v, want %#v", args, want)
+	}
+}
+
+func TestBuildArgsArrayRawArgsRejectsNonStringItems(t *testing.T) {
+	tool := &config.Tool{
+		Args: []config.Arg{
+			{Name: "extra_args", Type: "array", Flag: ""},
+		},
+	}
+
+	_, err := buildArgs(tool, map[string]interface{}{
+		"extra_args": []interface{}{"--rate", float64(10)},
+	})
+	if err == nil {
+		t.Fatal("buildArgs() error = nil, want error")
+	}
+	if !strings.Contains(err.Error(), "extra_args[1]") {
+		t.Fatalf("buildArgs() error = %q, want it to mention extra_args[1]", err)
+	}
+}
+
 func TestBuildArgsMissingRequired(t *testing.T) {
 	tool := &config.Tool{
 		Args: []config.Arg{{Name: "target", Required: true}},

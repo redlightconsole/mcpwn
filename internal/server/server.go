@@ -355,16 +355,27 @@ func generateSchema(t config.Tool) json.RawMessage {
 	props := make(map[string]interface{})
 	var required []string
 	for _, arg := range t.Args {
-		pType := "string"
-		if arg.Type == "boolean" {
-			pType = "boolean"
-		}
-		props[arg.Name] = map[string]interface{}{"type": pType, "description": arg.Description}
+		props[arg.Name] = schemaForArg(arg)
 		if arg.Required {
 			required = append(required, arg.Name)
 		}
 	}
 	return rawSchema(props, required)
+}
+
+func schemaForArg(arg config.Arg) map[string]interface{} {
+	schema := map[string]interface{}{"type": "string", "description": arg.Description}
+	switch arg.Type {
+	case "boolean":
+		schema["type"] = "boolean"
+	case "array":
+		delete(schema, "type")
+		schema["oneOf"] = []map[string]interface{}{
+			{"type": "array", "items": map[string]interface{}{"type": "string"}},
+			{"type": "string"},
+		}
+	}
+	return schema
 }
 
 func rawSchema(props map[string]interface{}, required []string) json.RawMessage {
@@ -392,12 +403,25 @@ func buildArgs(t *config.Tool, inputs map[string]interface{}) ([]string, error) 
 			if b, ok := val.(bool); ok && b {
 				args = append(args, def.Flag)
 			}
+		} else if def.Type == "array" {
+			values, err := stringListValue(def.Name, val)
+			if err != nil {
+				return nil, err
+			}
+			if def.Positional {
+				positional = append(positional, values...)
+			} else if def.Flag == "" {
+				args = append(args, values...)
+			} else {
+				for _, value := range values {
+					args = append(args, def.Flag, value)
+				}
+			}
 		} else {
 			sVal := fmt.Sprintf("%v", val)
 			if def.Positional {
 				positional = append(positional, sVal)
 			} else if def.Flag == "" {
-				// If no flag is defined, split the value and add as raw arguments
 				parts := strings.Fields(sVal)
 				args = append(args, parts...)
 			} else {
@@ -406,4 +430,25 @@ func buildArgs(t *config.Tool, inputs map[string]interface{}) ([]string, error) 
 		}
 	}
 	return append(args, positional...), nil
+}
+
+func stringListValue(name string, val interface{}) ([]string, error) {
+	switch typed := val.(type) {
+	case []string:
+		return typed, nil
+	case []interface{}:
+		values := make([]string, 0, len(typed))
+		for i, item := range typed {
+			value, ok := item.(string)
+			if !ok {
+				return nil, fmt.Errorf("parameter %s[%d] must be a string", name, i)
+			}
+			values = append(values, value)
+		}
+		return values, nil
+	case string:
+		return strings.Fields(typed), nil
+	default:
+		return nil, fmt.Errorf("parameter %s must be an array of strings", name)
+	}
 }

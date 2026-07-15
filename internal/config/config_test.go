@@ -22,6 +22,9 @@ tools:
         description: Message to print
         required: true
         positional: true
+      - name: extra_args
+        description: Additional arguments
+        type: array
 `)
 
 	cfg, err := Load(path)
