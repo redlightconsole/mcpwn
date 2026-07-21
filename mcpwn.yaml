@@ -89,9 +89,9 @@ tools:
     fixed_args: ["-silent"]
     args:
       - name: "host"
-        description: "Host or domain to resolve"
+        description: "Host, domain, CIDR, ASN, or comma-separated list to resolve"
         required: true
-        flag: "-d"
+        flag: "-l"
       - name: "resolver"
         description: "Resolver to use"
         flag: "-r"
