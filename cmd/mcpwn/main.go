@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log/slog"
 	"mcpwn/internal/config"
 	"mcpwn/internal/server"
@@ -17,6 +19,11 @@ var (
 )
 
 func main() {
+	transport := flag.String("transport", "stdio", "Transport to use: stdio or http")
+	port := flag.Int("port", 3000, "Port to listen on (http transport only)")
+	host := flag.String("host", "", "Host/interface to bind (http transport only; empty = all interfaces)")
+	flag.Parse()
+
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	slog.SetDefault(logger)
 
@@ -58,8 +65,20 @@ func main() {
 		"tools_count", len(cfg.Tools),
 	)
 	srv := server.New(cfg, Version)
-	if err := srv.Serve(); err != nil {
-		slog.Error("Server crash...", "error", err)
+
+	var serveErr error
+	switch *transport {
+	case "stdio":
+		serveErr = srv.Serve()
+	case "http":
+		addr := fmt.Sprintf("%s:%d", *host, *port)
+		serveErr = srv.ServeHTTP(addr)
+	default:
+		slog.Error("Unknown transport", "transport", *transport)
+		os.Exit(1)
+	}
+	if serveErr != nil {
+		slog.Error("Server crash...", "error", serveErr)
 		os.Exit(1)
 	}
 }

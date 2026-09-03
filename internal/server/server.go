@@ -9,6 +9,7 @@ import (
 	"mcpwn/internal/config"
 	"mcpwn/internal/executor"
 	"mcpwn/internal/output"
+	"net/http"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -71,6 +72,17 @@ func (ms *MCPServer) Serve() error {
 
 	ms.logger.Info("Server listening on Stdio")
 	return session.Wait()
+}
+
+// ServeHTTP runs the server over the Streamable HTTP transport, listening on
+// the given address (e.g. ":3001").
+func (ms *MCPServer) ServeHTTP(addr string) error {
+	handler := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server {
+		return ms.srv
+	}, nil)
+
+	ms.logger.Info("Server listening on HTTP", "addr", addr)
+	return http.ListenAndServe(addr, handler)
 }
 
 func (ms *MCPServer) handleCallTool(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {

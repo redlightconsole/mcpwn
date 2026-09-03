@@ -177,7 +177,29 @@ You can run the server directly to test if it loads your configuration correctly
 ./mcpwn
 ```
 
-The server communicates via `Stdio` and you will see log messages on `Stderr`.
+By default the server communicates via `Stdio` and you will see log messages on `Stderr`.
+
+#### Transports
+
+The transport is selected at launch with the `--transport` flag (default `stdio`):
+
+```bash
+# Stdio (default)
+./mcpwn
+
+# Streamable HTTP on port 3001
+./mcpwn --transport http --port 3001
+```
+
+HTTP flags:
+
+| Flag | Default | Description |
+|---|---|---|
+| `--transport` | `stdio` | Transport to use: `stdio` or `http`. |
+| `--port` | `3000` | Port to listen on (`http` only). |
+| `--host` | *(empty)* | Host/interface to bind (`http` only); empty binds all interfaces. |
+
+The `http` transport uses the MCP [Streamable HTTP](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http) protocol.
 
 ### Integration with Claude and Gemini (WIP)
 
@@ -186,6 +208,11 @@ The server communicates via `Stdio` and you will see log messages on `Stderr`.
 Run the following command in your terminal:
 ```bash
 claude mcp add --transport stdio mcpwn -- /path/to/your/mcpwn
+```
+
+Or, if you are running it over HTTP (`./mcpwn --transport http --port 3001`):
+```bash
+claude mcp add --transport http mcpwn http://localhost:3001
 ```
 
 #### Gemini CLI
