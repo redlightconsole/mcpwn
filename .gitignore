@@ -5,5 +5,5 @@ go.work.sum
 .idea/
 .vscode/
 .DS_Store
-./mcpwn
+mcpwn
 .gemini
