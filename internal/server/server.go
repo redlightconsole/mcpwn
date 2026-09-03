@@ -47,6 +47,7 @@ func New(cfg *config.Config, version string) *MCPServer {
 	}
 
 	ms.registerOutputTools()
+	ms.registerHTTPTool()
 
 	for _, t := range cfg.Tools {
 		ms.logger.Debug("Registering tool", "name", t.Name)
@@ -82,6 +83,15 @@ func (ms *MCPServer) handleCallTool(ctx context.Context, req *mcp.CallToolReques
 			return nil, err
 		}
 		return ms.handleOutputTool(req.Params.Name, argsMap)
+	}
+
+	if req.Params.Name == httpRequestToolName {
+		argsMap, err := parseArguments(req)
+		if err != nil {
+			ms.logger.ErrorContext(ctx, "Failed to unmarshal http_request arguments", "error", err)
+			return nil, err
+		}
+		return ms.handleHTTPRequest(argsMap)
 	}
 
 	var selectedTool *config.Tool
@@ -281,6 +291,30 @@ func requiredStringArg(args map[string]interface{}, name string) (string, error)
 	value, ok := raw.(string)
 	if !ok || strings.TrimSpace(value) == "" {
 		return "", fmt.Errorf("parameter %s must be a non-empty string", name)
+	}
+	return value, nil
+}
+
+func optionalStringArg(args map[string]interface{}, name, defaultValue string) string {
+	raw, ok := args[name]
+	if !ok {
+		return defaultValue
+	}
+	value, ok := raw.(string)
+	if !ok || strings.TrimSpace(value) == "" {
+		return defaultValue
+	}
+	return value
+}
+
+func optionalBoolArg(args map[string]interface{}, name string, defaultValue bool) (bool, error) {
+	raw, ok := args[name]
+	if !ok {
+		return defaultValue, nil
+	}
+	value, ok := raw.(bool)
+	if !ok {
+		return false, fmt.Errorf("parameter %s must be a boolean", name)
 	}
 	return value, nil
 }
